@@ -4,18 +4,51 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Users, MessageSquare, Video, GitBranch, VideoOff, Mic, MicOff } from "lucide-react";
+import { Users, MessageSquare, Video, GitBranch, VideoOff, Mic, MicOff, Shield, Check, X } from "lucide-react";
 import Chat from "./Chat";
 import VideoCall from "./VideoCall";
+import { useRoomHistory } from "@/contexts/RoomHistoryContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
 
-const CollaborationPanel: React.FC = () => {
+interface CollaborationPanelProps {
+  isOwner?: boolean;
+  roomId: string;
+}
+
+const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
+  isOwner = false,
+  roomId
+}) => {
   const [activeTab, setActiveTab] = useState("collaborators");
+  const { recentRooms, approveAccess, denyAccess } = useRoomHistory();
+  const { toast } = useToast();
   
   const collaborators = [
     { id: 1, name: "Alice Chen", avatar: "", color: "#3b82f6", status: "active" },
     { id: 2, name: "Bob Smith", avatar: "", color: "#10b981", status: "active" },
     { id: 3, name: "Charlie Davis", avatar: "", color: "#f59e0b", status: "away" }
   ];
+
+  // Get current room data
+  const currentRoom = recentRooms.find(room => room.id === roomId);
+  const pendingRequests = currentRoom?.pendingRequests || [];
+
+  const handleApprove = (userId: string) => {
+    approveAccess(roomId, userId);
+    toast({
+      title: "Access granted",
+      description: "User has been granted access to the room",
+    });
+  };
+
+  const handleDeny = (userId: string) => {
+    denyAccess(roomId, userId);
+    toast({
+      title: "Access denied",
+      description: "User's request has been denied",
+    });
+  };
 
   return (
     <Card className="w-full h-full border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
@@ -45,6 +78,34 @@ const CollaborationPanel: React.FC = () => {
           
           <TabsContent value="collaborators" className="flex-1 overflow-auto data-[state=active]:h-full">
             <div className="p-4 space-y-4">
+              {isOwner && pendingRequests.length > 0 && (
+                <div className="mb-4">
+                  <Alert>
+                    <Shield className="h-4 w-4" />
+                    <AlertTitle>Access Requests</AlertTitle>
+                    <AlertDescription>
+                      {pendingRequests.length} user(s) requesting access
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="mt-3 space-y-2">
+                    {pendingRequests.map(userId => (
+                      <div key={userId} className="flex items-center justify-between p-2 rounded-md border border-border">
+                        <span className="text-sm">{userId}</span>
+                        <div className="flex gap-2">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500" onClick={() => handleApprove(userId)}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => handleDeny(userId)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {collaborators.map(user => (
                 <div key={user.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
