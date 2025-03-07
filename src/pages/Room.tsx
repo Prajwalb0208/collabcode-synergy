@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -220,7 +221,10 @@ const Room = () => {
                 <ResizableHandle withHandle />
                 
                 <ResizablePanel defaultSize={50}>
-                  <CollaborationPanel />
+                  <CollaborationPanel 
+                    isOwner={isRoomOwner(roomId || "")} 
+                    roomId={roomId || ""} 
+                  />
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
@@ -297,8 +301,8 @@ const Room = () => {
           </Card>
         </div>
       </MainLayout>
-    );
-  }
+      );
+    }
 
   return (
     <MainLayout>
@@ -395,7 +399,10 @@ const Room = () => {
               <ResizableHandle withHandle />
               
               <ResizablePanel defaultSize={50}>
-                <CollaborationPanel isOwner={isRoomOwner(roomId || "")} roomId={roomId || ""} />
+                <CollaborationPanel 
+                  isOwner={isRoomOwner(roomId)} 
+                  roomId={roomId} 
+                />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
