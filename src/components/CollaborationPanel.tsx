@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Users, MessageSquare, Video, GitBranch } from "lucide-react";
+import { Users, MessageSquare, Video, GitBranch, VideoOff, Mic, MicOff } from "lucide-react";
 import Chat from "./Chat";
+import VideoCall from "./VideoCall";
 
 const CollaborationPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState("collaborators");
@@ -23,7 +24,7 @@ const CollaborationPanel: React.FC = () => {
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
         <Tabs defaultValue="collaborators" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid grid-cols-3 mx-4 my-2">
+          <TabsList className="grid grid-cols-4 mx-4 my-2">
             <TabsTrigger value="collaborators" onClick={() => setActiveTab("collaborators")}>
               <Users className="h-4 w-4 mr-1 md:mr-2" />
               <span className="hidden md:inline">People</span>
@@ -31,6 +32,10 @@ const CollaborationPanel: React.FC = () => {
             <TabsTrigger value="chat" onClick={() => setActiveTab("chat")}>
               <MessageSquare className="h-4 w-4 mr-1 md:mr-2" />
               <span className="hidden md:inline">Chat</span>
+            </TabsTrigger>
+            <TabsTrigger value="video" onClick={() => setActiveTab("video")}>
+              <Video className="h-4 w-4 mr-1 md:mr-2" />
+              <span className="hidden md:inline">Video</span>
             </TabsTrigger>
             <TabsTrigger value="git" onClick={() => setActiveTab("git")}>
               <GitBranch className="h-4 w-4 mr-1 md:mr-2" />
@@ -70,6 +75,10 @@ const CollaborationPanel: React.FC = () => {
           
           <TabsContent value="chat" className="flex-1 overflow-hidden data-[state=active]:h-full">
             <Chat />
+          </TabsContent>
+          
+          <TabsContent value="video" className="flex-1 overflow-hidden data-[state=active]:h-full">
+            <VideoCall />
           </TabsContent>
           
           <TabsContent value="git" className="p-4 data-[state=active]:h-full overflow-auto">

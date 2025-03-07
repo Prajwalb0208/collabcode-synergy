@@ -11,6 +11,7 @@ import MainLayout from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Play, Download, Save } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useRoomHistory } from "@/contexts/RoomHistoryContext";
 
 interface CodeFile {
   name: string;
@@ -20,6 +21,7 @@ interface CodeFile {
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
+  const { addRoom } = useRoomHistory();
   const [currentFile, setCurrentFile] = useState<CodeFile>({
     name: "main.js",
     language: "javascript",
@@ -43,6 +45,13 @@ const Room = () => {
     }
   ]);
   const { toast } = useToast();
+
+  // Add room to history when component mounts
+  useEffect(() => {
+    if (roomId) {
+      addRoom(roomId);
+    }
+  }, [roomId, addRoom]);
 
   const handleCodeChange = (newCode: string) => {
     setCurrentFile({

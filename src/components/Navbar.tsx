@@ -1,7 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Code, Github, UserPlus, Settings } from "lucide-react";
+import { Code, Github, UserPlus, Settings, History } from "lucide-react";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ const Navbar = () => {
             Home
           </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate("/rooms")}>
+            <History className="h-4 w-4 mr-2" />
             Rooms
           </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate("/documentation")}>
