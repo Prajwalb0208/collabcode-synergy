@@ -2,10 +2,15 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, MessageCircle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
-const VideoCall: React.FC = () => {
+interface VideoCallProps {
+  onChatToggle?: () => void;
+  isChatOpen?: boolean;
+}
+
+const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen }) => {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -104,6 +109,14 @@ const VideoCall: React.FC = () => {
             className="rounded-full h-12 w-12"
           >
             <ScreenShare className="h-5 w-5" />
+          </Button>
+          <Button 
+            variant={isChatOpen ? "default" : "outline"}
+            size="icon" 
+            onClick={onChatToggle}
+            className="rounded-full h-12 w-12"
+          >
+            <MessageCircle className="h-5 w-5" />
           </Button>
           <Button 
             variant="destructive" 

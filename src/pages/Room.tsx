@@ -11,17 +11,27 @@ import VideoCall from "@/components/VideoCall";
 import Chat from "@/components/Chat";
 import MainLayout from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Play, Download, Save, ShieldAlert, MessageCircle } from "lucide-react";
+import { Play, Download, Save, ShieldAlert, MessageCircle, Check, File, Terminal, Code, Video, Bot } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface CodeFile {
   name: string;
   language: string;
   content: string;
+}
+
+interface VisiblePanels {
+  files: boolean;
+  editor: boolean;
+  terminal: boolean;
+  videos: boolean;
+  ai: boolean;
 }
 
 const Room = () => {
@@ -59,6 +69,13 @@ const Room = () => {
   const { toast } = useToast();
   const [terminal, setTerminal] = useState<string[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [visiblePanels, setVisiblePanels] = useState<VisiblePanels>({
+    files: true,
+    editor: true,
+    terminal: true,
+    videos: true,
+    ai: true
+  });
 
   // Add room to history when component mounts
   useEffect(() => {
@@ -148,6 +165,13 @@ const Room = () => {
     setIsChatOpen(!isChatOpen);
   };
 
+  const togglePanelVisibility = (panel: keyof VisiblePanels) => {
+    setVisiblePanels(prev => ({
+      ...prev,
+      [panel]: !prev[panel]
+    }));
+  };
+
   // Create a new room or joining an existing room
   if (!roomId) {
     // Creating a new room - no access control needed
@@ -177,121 +201,223 @@ const Room = () => {
             </div>
           </div>
 
-          {/* New VSCode-like layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-12rem)]">
-            {/* Left side - Code Editor and Terminal */}
-            <div className="col-span-2 flex flex-col border rounded-lg overflow-hidden">
-              {/* Files and Editor Section */}
-              <div className="flex h-[70%]">
-                {/* Files List */}
-                <div className="w-[200px] border-r">
-                  <div className="p-3 border-b">
-                    <h3 className="font-medium text-sm">Files</h3>
-                  </div>
-                  <ScrollArea className="h-[calc(100%-40px)]">
-                    <div className="px-3 py-2">
-                      {files.map((file) => (
-                        <div
-                          key={file.name}
-                          className={`
-                            px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
-                            ${currentFile.name === file.name
-                              ? "bg-accent text-accent-foreground font-medium"
-                              : "hover:bg-muted/50"
-                            }
-                          `}
-                          onClick={() => setCurrentFile(file)}
-                        >
-                          {file.name}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
-                {/* Code Editor */}
-                <div className="flex-1">
-                  <CodeEditor 
-                    code={currentFile.content}
-                    onChange={handleCodeChange}
-                    language={currentFile.language}
-                  />
-                </div>
+          {/* Panel visibility controls */}
+          <div className="flex items-center gap-4 mb-4 border rounded-md p-2 bg-muted/30">
+            <div className="text-sm font-medium">Show panels:</div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="files" 
+                  checked={visiblePanels.files} 
+                  onCheckedChange={() => togglePanelVisibility('files')}
+                />
+                <Label htmlFor="files" className="flex items-center text-sm">
+                  <File className="h-3.5 w-3.5 mr-1.5" />
+                  Files
+                </Label>
               </div>
-              {/* Terminal Section */}
-              <div className="h-[30%] border-t">
-                <div className="flex items-center p-2 bg-muted/40 border-b">
-                  <h3 className="text-sm font-medium">Terminal</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="ml-auto"
-                    onClick={handleRunCode}
-                  >
-                    <Play className="h-4 w-4 mr-1" />
-                    Run
-                  </Button>
-                </div>
-                <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
-                  {terminal.map((line, i) => (
-                    <div key={i} className="mb-1">
-                      {line}
-                    </div>
-                  ))}
-                </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="editor" 
+                  checked={visiblePanels.editor} 
+                  onCheckedChange={() => togglePanelVisibility('editor')}
+                />
+                <Label htmlFor="editor" className="flex items-center text-sm">
+                  <Code className="h-3.5 w-3.5 mr-1.5" />
+                  Editor
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="terminal" 
+                  checked={visiblePanels.terminal} 
+                  onCheckedChange={() => togglePanelVisibility('terminal')}
+                />
+                <Label htmlFor="terminal" className="flex items-center text-sm">
+                  <Terminal className="h-3.5 w-3.5 mr-1.5" />
+                  Terminal
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="videos" 
+                  checked={visiblePanels.videos} 
+                  onCheckedChange={() => togglePanelVisibility('videos')}
+                />
+                <Label htmlFor="videos" className="flex items-center text-sm">
+                  <Video className="h-3.5 w-3.5 mr-1.5" />
+                  Video
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="ai" 
+                  checked={visiblePanels.ai} 
+                  onCheckedChange={() => togglePanelVisibility('ai')}
+                />
+                <Label htmlFor="ai" className="flex items-center text-sm">
+                  <Bot className="h-3.5 w-3.5 mr-1.5" />
+                  AI
+                </Label>
               </div>
             </div>
+          </div>
 
-            {/* Right side - Video Call and AI/Chat */}
-            <div className="col-span-1 flex flex-col gap-4">
-              {/* Google Meet Style Video Call */}
-              <div className="h-[60%] border rounded-lg overflow-hidden">
-                <VideoCall />
-              </div>
-              
-              {/* AI Assistant & Chat Tabs */}
-              <div className="h-[40%] border rounded-lg overflow-hidden relative">
-                <Tabs defaultValue="ai" className="h-full flex flex-col">
-                  <div className="border-b px-3">
-                    <TabsList className="bg-transparent h-12">
-                      <TabsTrigger value="ai" className="data-[state=active]:bg-background">
-                        AI Assistant
-                      </TabsTrigger>
-                      <TabsTrigger value="collaboration" className="data-[state=active]:bg-background">
-                        Collaboration
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
-                  <TabsContent value="ai" className="flex-1 m-0 p-0 overflow-hidden">
-                    <AIAssistant code={currentFile.content} />
-                  </TabsContent>
-                  <TabsContent value="collaboration" className="flex-1 m-0 p-0 overflow-hidden">
-                    <CollaborationPanel 
-                      isOwner={isRoomOwner(roomId || "")} 
-                      roomId={roomId || ""} 
-                    />
-                  </TabsContent>
-                </Tabs>
-                
-                {/* GMeet-like Chat Button */}
-                <Button 
-                  variant="secondary"
-                  size="icon"
-                  className="absolute bottom-4 right-4 rounded-full shadow-lg z-10"
-                  onClick={toggleChat}
+          {/* Resizable layout */}
+          <div className="h-[calc(100vh-12rem)]">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Main coding area */}
+              {visiblePanels.editor && (
+                <ResizablePanel 
+                  defaultSize={70} 
+                  minSize={30}
+                  className="flex flex-col border rounded-lg overflow-hidden"
                 >
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
-                
-                {/* Slide-in Chat Panel */}
-                <div className={`
-                  absolute inset-y-0 right-0 w-72 bg-background border-l shadow-lg transform transition-transform duration-300
-                  ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
-                  z-20
-                `}>
-                  <Chat />
-                </div>
-              </div>
-            </div>
+                  <ResizablePanelGroup direction="vertical">
+                    {/* Files and Editor Section */}
+                    <ResizablePanel defaultSize={70} minSize={30}>
+                      <div className="flex h-full">
+                        {/* Files List */}
+                        {visiblePanels.files && (
+                          <>
+                            <div className="w-[200px] border-r">
+                              <div className="p-3 border-b">
+                                <h3 className="font-medium text-sm">Files</h3>
+                              </div>
+                              <ScrollArea className="h-[calc(100%-40px)]">
+                                <div className="px-3 py-2">
+                                  {files.map((file) => (
+                                    <div
+                                      key={file.name}
+                                      className={`
+                                        px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
+                                        ${currentFile.name === file.name
+                                          ? "bg-accent text-accent-foreground font-medium"
+                                          : "hover:bg-muted/50"
+                                        }
+                                      `}
+                                      onClick={() => setCurrentFile(file)}
+                                    >
+                                      {file.name}
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                            <ResizableHandle withHandle />
+                          </>
+                        )}
+                        {/* Code Editor */}
+                        <div className="flex-1">
+                          <CodeEditor 
+                            code={currentFile.content}
+                            onChange={handleCodeChange}
+                            language={currentFile.language}
+                          />
+                        </div>
+                      </div>
+                    </ResizablePanel>
+                    
+                    {/* Terminal Section */}
+                    {visiblePanels.terminal && (
+                      <>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={30} minSize={15}>
+                          <div className="h-full">
+                            <div className="flex items-center p-2 bg-muted/40 border-b">
+                              <h3 className="text-sm font-medium">Terminal</h3>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="ml-auto"
+                                onClick={handleRunCode}
+                              >
+                                <Play className="h-4 w-4 mr-1" />
+                                Run
+                              </Button>
+                            </div>
+                            <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
+                              {terminal.map((line, i) => (
+                                <div key={i} className="mb-1">
+                                  {line}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </ResizablePanel>
+                      </>
+                    )}
+                  </ResizablePanelGroup>
+                </ResizablePanel>
+              )}
+
+              {/* Right side panels */}
+              {(visiblePanels.videos || visiblePanels.ai) && (
+                <>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel 
+                    defaultSize={30} 
+                    minSize={25}
+                    className="flex flex-col gap-4 relative"
+                  >
+                    <ResizablePanelGroup direction="vertical">
+                      {/* Video Call */}
+                      {visiblePanels.videos && (
+                        <ResizablePanel 
+                          defaultSize={60} 
+                          minSize={30}
+                          className="border rounded-lg overflow-hidden"
+                        >
+                          <VideoCall onChatToggle={toggleChat} isChatOpen={isChatOpen} />
+                        </ResizablePanel>
+                      )}
+                      
+                      {/* AI Assistant & Collaboration */}
+                      {visiblePanels.ai && (
+                        <>
+                          {visiblePanels.videos && <ResizableHandle withHandle />}
+                          <ResizablePanel 
+                            defaultSize={40} 
+                            minSize={20} 
+                            className="border rounded-lg overflow-hidden relative"
+                          >
+                            <Tabs defaultValue="ai" className="h-full flex flex-col">
+                              <div className="border-b px-3">
+                                <TabsList className="bg-transparent h-12">
+                                  <TabsTrigger value="ai" className="data-[state=active]:bg-background">
+                                    AI Assistant
+                                  </TabsTrigger>
+                                  <TabsTrigger value="collaboration" className="data-[state=active]:bg-background">
+                                    Collaboration
+                                  </TabsTrigger>
+                                </TabsList>
+                              </div>
+                              <TabsContent value="ai" className="flex-1 m-0 p-0 overflow-hidden">
+                                <AIAssistant code={currentFile.content} />
+                              </TabsContent>
+                              <TabsContent value="collaboration" className="flex-1 m-0 p-0 overflow-hidden">
+                                <CollaborationPanel 
+                                  isOwner={isRoomOwner(roomId || "")} 
+                                  roomId={roomId || ""} 
+                                />
+                              </TabsContent>
+                            </Tabs>
+                          </ResizablePanel>
+                        </>
+                      )}
+                    </ResizablePanelGroup>
+                    
+                    {/* Full-height Chat Panel */}
+                    <div className={`
+                      absolute inset-y-0 right-0 w-80 bg-background border-l shadow-lg transform transition-transform duration-300 z-30
+                      ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
+                    `}>
+                      <Chat onClose={toggleChat} />
+                    </div>
+                  </ResizablePanel>
+                </>
+              )}
+            </ResizablePanelGroup>
           </div>
         </div>
       </MainLayout>
@@ -396,121 +522,223 @@ const Room = () => {
           </div>
         </div>
 
-        {/* New VSCode-like layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-12rem)]">
-          {/* Left side - Code Editor and Terminal */}
-          <div className="col-span-2 flex flex-col border rounded-lg overflow-hidden">
-            {/* Files and Editor Section */}
-            <div className="flex h-[70%]">
-              {/* Files List */}
-              <div className="w-[200px] border-r">
-                <div className="p-3 border-b">
-                  <h3 className="font-medium text-sm">Files</h3>
-                </div>
-                <ScrollArea className="h-[calc(100%-40px)]">
-                  <div className="px-3 py-2">
-                    {files.map((file) => (
-                      <div
-                        key={file.name}
-                        className={`
-                          px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
-                          ${currentFile.name === file.name
-                            ? "bg-accent text-accent-foreground font-medium"
-                            : "hover:bg-muted/50"
-                          }
-                        `}
-                        onClick={() => setCurrentFile(file)}
-                      >
-                        {file.name}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-              {/* Code Editor */}
-              <div className="flex-1">
-                <CodeEditor 
-                  code={currentFile.content}
-                  onChange={handleCodeChange}
-                  language={currentFile.language}
-                />
-              </div>
+        {/* Panel visibility controls */}
+        <div className="flex items-center gap-4 mb-4 border rounded-md p-2 bg-muted/30">
+          <div className="text-sm font-medium">Show panels:</div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="files" 
+                checked={visiblePanels.files} 
+                onCheckedChange={() => togglePanelVisibility('files')}
+              />
+              <Label htmlFor="files" className="flex items-center text-sm">
+                <File className="h-3.5 w-3.5 mr-1.5" />
+                Files
+              </Label>
             </div>
-            {/* Terminal Section */}
-            <div className="h-[30%] border-t">
-              <div className="flex items-center p-2 bg-muted/40 border-b">
-                <h3 className="text-sm font-medium">Terminal</h3>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="ml-auto"
-                  onClick={handleRunCode}
-                >
-                  <Play className="h-4 w-4 mr-1" />
-                  Run
-                </Button>
-              </div>
-              <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
-                {terminal.map((line, i) => (
-                  <div key={i} className="mb-1">
-                    {line}
-                  </div>
-                ))}
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="editor" 
+                checked={visiblePanels.editor} 
+                onCheckedChange={() => togglePanelVisibility('editor')}
+              />
+              <Label htmlFor="editor" className="flex items-center text-sm">
+                <Code className="h-3.5 w-3.5 mr-1.5" />
+                Editor
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="terminal" 
+                checked={visiblePanels.terminal} 
+                onCheckedChange={() => togglePanelVisibility('terminal')}
+              />
+              <Label htmlFor="terminal" className="flex items-center text-sm">
+                <Terminal className="h-3.5 w-3.5 mr-1.5" />
+                Terminal
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="videos" 
+                checked={visiblePanels.videos} 
+                onCheckedChange={() => togglePanelVisibility('videos')}
+              />
+              <Label htmlFor="videos" className="flex items-center text-sm">
+                <Video className="h-3.5 w-3.5 mr-1.5" />
+                Video
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="ai" 
+                checked={visiblePanels.ai} 
+                onCheckedChange={() => togglePanelVisibility('ai')}
+              />
+              <Label htmlFor="ai" className="flex items-center text-sm">
+                <Bot className="h-3.5 w-3.5 mr-1.5" />
+                AI
+              </Label>
             </div>
           </div>
+        </div>
 
-          {/* Right side - Video Call and AI/Chat */}
-          <div className="col-span-1 flex flex-col gap-4">
-            {/* Google Meet Style Video Call */}
-            <div className="h-[60%] border rounded-lg overflow-hidden">
-              <VideoCall />
-            </div>
-            
-            {/* AI Assistant & Chat Tabs */}
-            <div className="h-[40%] border rounded-lg overflow-hidden relative">
-              <Tabs defaultValue="ai" className="h-full flex flex-col">
-                <div className="border-b px-3">
-                  <TabsList className="bg-transparent h-12">
-                    <TabsTrigger value="ai" className="data-[state=active]:bg-background">
-                      AI Assistant
-                    </TabsTrigger>
-                    <TabsTrigger value="collaboration" className="data-[state=active]:bg-background">
-                      Collaboration
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-                <TabsContent value="ai" className="flex-1 m-0 p-0 overflow-hidden">
-                  <AIAssistant code={currentFile.content} />
-                </TabsContent>
-                <TabsContent value="collaboration" className="flex-1 m-0 p-0 overflow-hidden">
-                  <CollaborationPanel 
-                    isOwner={isRoomOwner(roomId)} 
-                    roomId={roomId} 
-                  />
-                </TabsContent>
-              </Tabs>
-              
-              {/* GMeet-like Chat Button */}
-              <Button 
-                variant="secondary"
-                size="icon"
-                className="absolute bottom-4 right-4 rounded-full shadow-lg z-10"
-                onClick={toggleChat}
+        {/* Resizable layout */}
+        <div className="h-[calc(100vh-12rem)]">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Main coding area */}
+            {visiblePanels.editor && (
+              <ResizablePanel 
+                defaultSize={70} 
+                minSize={30}
+                className="flex flex-col border rounded-lg overflow-hidden"
               >
-                <MessageCircle className="h-5 w-5" />
-              </Button>
-              
-              {/* Slide-in Chat Panel */}
-              <div className={`
-                absolute inset-y-0 right-0 w-72 bg-background border-l shadow-lg transform transition-transform duration-300
-                ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
-                z-20
-              `}>
-                <Chat />
-              </div>
-            </div>
-          </div>
+                <ResizablePanelGroup direction="vertical">
+                  {/* Files and Editor Section */}
+                  <ResizablePanel defaultSize={70} minSize={30}>
+                    <div className="flex h-full">
+                      {/* Files List */}
+                      {visiblePanels.files && (
+                        <>
+                          <div className="w-[200px] border-r">
+                            <div className="p-3 border-b">
+                              <h3 className="font-medium text-sm">Files</h3>
+                            </div>
+                            <ScrollArea className="h-[calc(100%-40px)]">
+                              <div className="px-3 py-2">
+                                {files.map((file) => (
+                                  <div
+                                    key={file.name}
+                                    className={`
+                                      px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
+                                      ${currentFile.name === file.name
+                                        ? "bg-accent text-accent-foreground font-medium"
+                                        : "hover:bg-muted/50"
+                                      }
+                                    `}
+                                    onClick={() => setCurrentFile(file)}
+                                  >
+                                    {file.name}
+                                  </div>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                          </div>
+                          <ResizableHandle withHandle />
+                        </>
+                      )}
+                      {/* Code Editor */}
+                      <div className="flex-1">
+                        <CodeEditor 
+                          code={currentFile.content}
+                          onChange={handleCodeChange}
+                          language={currentFile.language}
+                        />
+                      </div>
+                    </div>
+                  </ResizablePanel>
+                  
+                  {/* Terminal Section */}
+                  {visiblePanels.terminal && (
+                    <>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel defaultSize={30} minSize={15}>
+                        <div className="h-full">
+                          <div className="flex items-center p-2 bg-muted/40 border-b">
+                            <h3 className="text-sm font-medium">Terminal</h3>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="ml-auto"
+                              onClick={handleRunCode}
+                            >
+                              <Play className="h-4 w-4 mr-1" />
+                              Run
+                            </Button>
+                          </div>
+                          <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
+                            {terminal.map((line, i) => (
+                              <div key={i} className="mb-1">
+                                {line}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </ResizablePanel>
+                    </>
+                  )}
+                </ResizablePanelGroup>
+              </ResizablePanel>
+            )}
+
+            {/* Right side panels */}
+            {(visiblePanels.videos || visiblePanels.ai) && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel 
+                  defaultSize={30} 
+                  minSize={25}
+                  className="flex flex-col gap-4 relative"
+                >
+                  <ResizablePanelGroup direction="vertical">
+                    {/* Video Call */}
+                    {visiblePanels.videos && (
+                      <ResizablePanel 
+                        defaultSize={60} 
+                        minSize={30}
+                        className="border rounded-lg overflow-hidden"
+                      >
+                        <VideoCall onChatToggle={toggleChat} isChatOpen={isChatOpen} />
+                      </ResizablePanel>
+                    )}
+                    
+                    {/* AI Assistant & Collaboration */}
+                    {visiblePanels.ai && (
+                      <>
+                        {visiblePanels.videos && <ResizableHandle withHandle />}
+                        <ResizablePanel 
+                          defaultSize={40} 
+                          minSize={20} 
+                          className="border rounded-lg overflow-hidden relative"
+                        >
+                          <Tabs defaultValue="ai" className="h-full flex flex-col">
+                            <div className="border-b px-3">
+                              <TabsList className="bg-transparent h-12">
+                                <TabsTrigger value="ai" className="data-[state=active]:bg-background">
+                                  AI Assistant
+                                </TabsTrigger>
+                                <TabsTrigger value="collaboration" className="data-[state=active]:bg-background">
+                                  Collaboration
+                                </TabsTrigger>
+                              </TabsList>
+                            </div>
+                            <TabsContent value="ai" className="flex-1 m-0 p-0 overflow-hidden">
+                              <AIAssistant code={currentFile.content} />
+                            </TabsContent>
+                            <TabsContent value="collaboration" className="flex-1 m-0 p-0 overflow-hidden">
+                              <CollaborationPanel 
+                                isOwner={isRoomOwner(roomId)} 
+                                roomId={roomId} 
+                              />
+                            </TabsContent>
+                          </Tabs>
+                        </ResizablePanel>
+                      </>
+                    )}
+                  </ResizablePanelGroup>
+                  
+                  {/* Full-height Chat Panel */}
+                  <div className={`
+                    absolute inset-y-0 right-0 w-80 bg-background border-l shadow-lg transform transition-transform duration-300 z-30
+                    ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
+                  `}>
+                    <Chat onClose={toggleChat} />
+                  </div>
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
         </div>
       </div>
     </MainLayout>

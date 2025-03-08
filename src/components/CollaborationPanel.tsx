@@ -21,6 +21,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   roomId
 }) => {
   const [activeTab, setActiveTab] = useState("collaborators");
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const { recentRooms, approveAccess, denyAccess } = useRoomHistory();
   const { toast } = useToast();
   
@@ -50,8 +51,12 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     });
   };
 
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+  };
+
   return (
-    <Card className="w-full h-full border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
+    <Card className="w-full h-full border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col relative">
       <CardHeader className="pb-0 pt-4">
         <CardTitle className="text-base">Collaboration</CardTitle>
       </CardHeader>
@@ -122,8 +127,8 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Video className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleChat}>
+                    <MessageSquare className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
@@ -139,7 +144,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
           </TabsContent>
           
           <TabsContent value="video" className="flex-1 overflow-hidden data-[state=active]:h-full">
-            <VideoCall />
+            <VideoCall onChatToggle={toggleChat} isChatOpen={isChatOpen} />
           </TabsContent>
           
           <TabsContent value="git" className="p-4 data-[state=active]:h-full overflow-auto">
@@ -175,6 +180,14 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
             </div>
           </TabsContent>
         </Tabs>
+        
+        {/* Chat panel inside the collaboration panel */}
+        <div className={`
+          absolute inset-y-0 right-0 w-80 bg-background border-l shadow-lg transform transition-transform duration-300 z-10
+          ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}>
+          <Chat onClose={toggleChat} />
+        </div>
       </CardContent>
     </Card>
   );

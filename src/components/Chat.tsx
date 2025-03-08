@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, X } from "lucide-react";
 
 interface Message {
   id: string;
@@ -17,7 +17,11 @@ interface Message {
   timestamp: Date;
 }
 
-const Chat: React.FC = () => {
+interface ChatProps {
+  onClose?: () => void;
+}
+
+const Chat: React.FC<ChatProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -82,6 +86,20 @@ const Chat: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex justify-between items-center p-3 border-b">
+        <h3 className="font-medium">Chat</h3>
+        {onClose && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 rounded-full" 
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div 
