@@ -1,15 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
-import { Separator } from "@/components/ui/separator";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from "@/components/CodeEditor";
 import AIAssistant from "@/components/AIAssistant";
 import CollaborationPanel from "@/components/CollaborationPanel";
+import VideoCall from "@/components/VideoCall";
+import Chat from "@/components/Chat";
 import MainLayout from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Play, Download, Save, ShieldAlert } from "lucide-react";
+import { Play, Download, Save, ShieldAlert, MessageCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +58,7 @@ const Room = () => {
   ]);
   const { toast } = useToast();
   const [terminal, setTerminal] = useState<string[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Add room to history when component mounts
   useEffect(() => {
@@ -141,6 +144,10 @@ const Room = () => {
     }
   };
 
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+  };
+
   // Create a new room or joining an existing room
   if (!roomId) {
     // Creating a new room - no access control needed
@@ -149,9 +156,7 @@ const Room = () => {
         <div className="container h-[calc(100vh-5rem)] py-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">
-                {roomId ? `Room: ${roomId}` : "New Room"}
-              </h1>
+              <h1 className="text-2xl font-bold">New Room</h1>
               <p className="text-sm text-muted-foreground">
                 Collaborative coding session
               </p>
@@ -172,63 +177,122 @@ const Room = () => {
             </div>
           </div>
 
-          <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-12rem)] border rounded-lg">
-            <ResizablePanel defaultSize={20} minSize={15}>
-              <div className="flex h-full flex-col">
-                <div className="p-3 border-b">
-                  <h3 className="font-medium text-sm">Files</h3>
-                </div>
-                <ScrollArea className="flex-1">
-                  <div className="px-3 py-2">
-                    {files.map((file) => (
-                      <div
-                        key={file.name}
-                        className={`
-                          px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
-                          ${currentFile.name === file.name
-                            ? "bg-accent text-accent-foreground font-medium"
-                            : "hover:bg-muted/50"
-                          }
-                        `}
-                        onClick={() => setCurrentFile(file)}
-                      >
-                        {file.name}
-                      </div>
-                    ))}
+          {/* New VSCode-like layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-12rem)]">
+            {/* Left side - Code Editor and Terminal */}
+            <div className="col-span-2 flex flex-col border rounded-lg overflow-hidden">
+              {/* Files and Editor Section */}
+              <div className="flex h-[70%]">
+                {/* Files List */}
+                <div className="w-[200px] border-r">
+                  <div className="p-3 border-b">
+                    <h3 className="font-medium text-sm">Files</h3>
                   </div>
-                </ScrollArea>
-              </div>
-            </ResizablePanel>
-            
-            <ResizableHandle withHandle />
-            
-            <ResizablePanel defaultSize={55}>
-              <CodeEditor 
-                code={currentFile.content}
-                onChange={handleCodeChange}
-                language={currentFile.language}
-              />
-            </ResizablePanel>
-            
-            <ResizableHandle withHandle />
-            
-            <ResizablePanel defaultSize={25}>
-              <ResizablePanelGroup direction="vertical">
-                <ResizablePanel defaultSize={50}>
-                  <AIAssistant code={currentFile.content} />
-                </ResizablePanel>
-                
-                <ResizableHandle withHandle />
-                
-                <ResizablePanel defaultSize={50}>
-                  <CollaborationPanel 
-                    isOwner={isRoomOwner(roomId || "")} 
-                    roomId={roomId || ""} 
+                  <ScrollArea className="h-[calc(100%-40px)]">
+                    <div className="px-3 py-2">
+                      {files.map((file) => (
+                        <div
+                          key={file.name}
+                          className={`
+                            px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
+                            ${currentFile.name === file.name
+                              ? "bg-accent text-accent-foreground font-medium"
+                              : "hover:bg-muted/50"
+                            }
+                          `}
+                          onClick={() => setCurrentFile(file)}
+                        >
+                          {file.name}
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+                {/* Code Editor */}
+                <div className="flex-1">
+                  <CodeEditor 
+                    code={currentFile.content}
+                    onChange={handleCodeChange}
+                    language={currentFile.language}
                   />
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+                </div>
+              </div>
+              {/* Terminal Section */}
+              <div className="h-[30%] border-t">
+                <div className="flex items-center p-2 bg-muted/40 border-b">
+                  <h3 className="text-sm font-medium">Terminal</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-auto"
+                    onClick={handleRunCode}
+                  >
+                    <Play className="h-4 w-4 mr-1" />
+                    Run
+                  </Button>
+                </div>
+                <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
+                  {terminal.map((line, i) => (
+                    <div key={i} className="mb-1">
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Video Call and AI/Chat */}
+            <div className="col-span-1 flex flex-col gap-4">
+              {/* Google Meet Style Video Call */}
+              <div className="h-[60%] border rounded-lg overflow-hidden">
+                <VideoCall />
+              </div>
+              
+              {/* AI Assistant & Chat Tabs */}
+              <div className="h-[40%] border rounded-lg overflow-hidden relative">
+                <Tabs defaultValue="ai" className="h-full flex flex-col">
+                  <div className="border-b px-3">
+                    <TabsList className="bg-transparent h-12">
+                      <TabsTrigger value="ai" className="data-[state=active]:bg-background">
+                        AI Assistant
+                      </TabsTrigger>
+                      <TabsTrigger value="collaboration" className="data-[state=active]:bg-background">
+                        Collaboration
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+                  <TabsContent value="ai" className="flex-1 m-0 p-0 overflow-hidden">
+                    <AIAssistant code={currentFile.content} />
+                  </TabsContent>
+                  <TabsContent value="collaboration" className="flex-1 m-0 p-0 overflow-hidden">
+                    <CollaborationPanel 
+                      isOwner={isRoomOwner(roomId || "")} 
+                      roomId={roomId || ""} 
+                    />
+                  </TabsContent>
+                </Tabs>
+                
+                {/* GMeet-like Chat Button */}
+                <Button 
+                  variant="secondary"
+                  size="icon"
+                  className="absolute bottom-4 right-4 rounded-full shadow-lg z-10"
+                  onClick={toggleChat}
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </Button>
+                
+                {/* Slide-in Chat Panel */}
+                <div className={`
+                  absolute inset-y-0 right-0 w-72 bg-background border-l shadow-lg transform transition-transform duration-300
+                  ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
+                  z-20
+                `}>
+                  <Chat />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
@@ -301,8 +365,8 @@ const Room = () => {
           </Card>
         </div>
       </MainLayout>
-      );
-    }
+    );
+  }
 
   return (
     <MainLayout>
@@ -310,7 +374,7 @@ const Room = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold">
-              {roomId ? `Room: ${roomId}` : "New Room"}
+              Room: {roomId}
             </h1>
             <p className="text-sm text-muted-foreground">
               Collaborative coding session
@@ -332,81 +396,122 @@ const Room = () => {
           </div>
         </div>
 
-        <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-12rem)] border rounded-lg">
-          <ResizablePanel defaultSize={20} minSize={15}>
-            <div className="flex h-full flex-col">
-              <div className="p-3 border-b">
-                <h3 className="font-medium text-sm">Files</h3>
-              </div>
-              <ScrollArea className="flex-1">
-                <div className="px-3 py-2">
-                  {files.map((file) => (
-                    <div
-                      key={file.name}
-                      className={`
-                        px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
-                        ${currentFile.name === file.name
-                          ? "bg-accent text-accent-foreground font-medium"
-                          : "hover:bg-muted/50"
-                        }
-                      `}
-                      onClick={() => setCurrentFile(file)}
-                    >
-                      {file.name}
-                    </div>
-                  ))}
+        {/* New VSCode-like layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-12rem)]">
+          {/* Left side - Code Editor and Terminal */}
+          <div className="col-span-2 flex flex-col border rounded-lg overflow-hidden">
+            {/* Files and Editor Section */}
+            <div className="flex h-[70%]">
+              {/* Files List */}
+              <div className="w-[200px] border-r">
+                <div className="p-3 border-b">
+                  <h3 className="font-medium text-sm">Files</h3>
                 </div>
-              </ScrollArea>
-            </div>
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          <ResizablePanel defaultSize={55}>
-            <ResizablePanelGroup direction="vertical">
-              <ResizablePanel defaultSize={70}>
+                <ScrollArea className="h-[calc(100%-40px)]">
+                  <div className="px-3 py-2">
+                    {files.map((file) => (
+                      <div
+                        key={file.name}
+                        className={`
+                          px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
+                          ${currentFile.name === file.name
+                            ? "bg-accent text-accent-foreground font-medium"
+                            : "hover:bg-muted/50"
+                          }
+                        `}
+                        onClick={() => setCurrentFile(file)}
+                      >
+                        {file.name}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+              {/* Code Editor */}
+              <div className="flex-1">
                 <CodeEditor 
                   code={currentFile.content}
                   onChange={handleCodeChange}
                   language={currentFile.language}
                 />
-              </ResizablePanel>
-              
-              <ResizableHandle withHandle />
-              
-              <ResizablePanel defaultSize={30}>
-                <div className="h-full flex flex-col">
-                  <div className="bg-black text-green-400 font-mono text-sm p-3 h-full overflow-auto">
-                    {terminal.map((line, i) => (
-                      <div key={i} className="mb-1">
-                        {line}
-                      </div>
-                    ))}
+              </div>
+            </div>
+            {/* Terminal Section */}
+            <div className="h-[30%] border-t">
+              <div className="flex items-center p-2 bg-muted/40 border-b">
+                <h3 className="text-sm font-medium">Terminal</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ml-auto"
+                  onClick={handleRunCode}
+                >
+                  <Play className="h-4 w-4 mr-1" />
+                  Run
+                </Button>
+              </div>
+              <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
+                {terminal.map((line, i) => (
+                  <div key={i} className="mb-1">
+                    {line}
                   </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right side - Video Call and AI/Chat */}
+          <div className="col-span-1 flex flex-col gap-4">
+            {/* Google Meet Style Video Call */}
+            <div className="h-[60%] border rounded-lg overflow-hidden">
+              <VideoCall />
+            </div>
+            
+            {/* AI Assistant & Chat Tabs */}
+            <div className="h-[40%] border rounded-lg overflow-hidden relative">
+              <Tabs defaultValue="ai" className="h-full flex flex-col">
+                <div className="border-b px-3">
+                  <TabsList className="bg-transparent h-12">
+                    <TabsTrigger value="ai" className="data-[state=active]:bg-background">
+                      AI Assistant
+                    </TabsTrigger>
+                    <TabsTrigger value="collaboration" className="data-[state=active]:bg-background">
+                      Collaboration
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          <ResizablePanel defaultSize={25}>
-            <ResizablePanelGroup direction="vertical">
-              <ResizablePanel defaultSize={50}>
-                <AIAssistant code={currentFile.content} />
-              </ResizablePanel>
+                <TabsContent value="ai" className="flex-1 m-0 p-0 overflow-hidden">
+                  <AIAssistant code={currentFile.content} />
+                </TabsContent>
+                <TabsContent value="collaboration" className="flex-1 m-0 p-0 overflow-hidden">
+                  <CollaborationPanel 
+                    isOwner={isRoomOwner(roomId)} 
+                    roomId={roomId} 
+                  />
+                </TabsContent>
+              </Tabs>
               
-              <ResizableHandle withHandle />
+              {/* GMeet-like Chat Button */}
+              <Button 
+                variant="secondary"
+                size="icon"
+                className="absolute bottom-4 right-4 rounded-full shadow-lg z-10"
+                onClick={toggleChat}
+              >
+                <MessageCircle className="h-5 w-5" />
+              </Button>
               
-              <ResizablePanel defaultSize={50}>
-                <CollaborationPanel 
-                  isOwner={isRoomOwner(roomId)} 
-                  roomId={roomId} 
-                />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+              {/* Slide-in Chat Panel */}
+              <div className={`
+                absolute inset-y-0 right-0 w-72 bg-background border-l shadow-lg transform transition-transform duration-300
+                ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
+                z-20
+              `}>
+                <Chat />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
