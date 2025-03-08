@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 interface Room {
   id: string;
   name: string;
+  description?: string;
   lastVisited: Date;
   owner: string;
   participants: string[];
@@ -47,7 +48,8 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           lastVisited: new Date(room.lastVisited),
           owner: room.owner || userId,
           participants: room.participants || [userId],
-          pendingRequests: room.pendingRequests || []
+          pendingRequests: room.pendingRequests || [],
+          description: room.description || ""
         }));
       } catch (e) {
         return [];
@@ -82,6 +84,7 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const newRoom = {
           id: roomId,
           name: `Room ${roomId.substring(0, 4)}...`,
+          description: "Collaborative coding session",
           lastVisited: new Date(),
           owner: userId,
           participants: [userId],
