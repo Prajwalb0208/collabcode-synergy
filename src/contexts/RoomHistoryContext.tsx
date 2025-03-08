@@ -1,6 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
+import { Github } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface Room {
   id: string;
@@ -10,17 +12,20 @@ interface Room {
   owner: string;
   participants: string[];
   pendingRequests: string[];
+  gitHubRepo?: string;
 }
 
 interface RoomHistoryContextType {
   recentRooms: Room[];
   addRoom: (roomId: string) => void;
+  updateRoomDetails: (roomId: string, details: Partial<Omit<Room, 'id'>>) => void;
   isRoomOwner: (roomId: string) => boolean;
   isParticipant: (roomId: string) => boolean;
   isPendingApproval: (roomId: string) => boolean;
   requestAccess: (roomId: string) => void;
   approveAccess: (roomId: string, userId: string) => void;
   denyAccess: (roomId: string, userId: string) => void;
+  connectGithubRepo: (roomId: string, repoUrl: string) => void;
 }
 
 const RoomHistoryContext = createContext<RoomHistoryContextType | undefined>(undefined);
@@ -37,8 +42,11 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const { user } = useAuth();
   const userId = user?.id || "anonymous";
 
+  // Use user ID in localStorage key to separate room history by user
+  const storageKey = `roomHistory_${userId}`;
+
   const [recentRooms, setRecentRooms] = useState<Room[]>(() => {
-    const saved = localStorage.getItem("roomHistory");
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         // Convert string dates back to Date objects
@@ -49,7 +57,8 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           owner: room.owner || userId,
           participants: room.participants || [userId],
           pendingRequests: room.pendingRequests || [],
-          description: room.description || ""
+          description: room.description || "",
+          gitHubRepo: room.gitHubRepo || ""
         }));
       } catch (e) {
         return [];
@@ -60,8 +69,8 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     // Save to localStorage whenever recentRooms changes
-    localStorage.setItem("roomHistory", JSON.stringify(recentRooms));
-  }, [recentRooms]);
+    localStorage.setItem(storageKey, JSON.stringify(recentRooms));
+  }, [recentRooms, storageKey]);
 
   const addRoom = (roomId: string) => {
     setRecentRooms(prev => {
@@ -92,6 +101,28 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         };
         return [newRoom, ...prev].slice(0, 10);
       }
+    });
+  };
+
+  const updateRoomDetails = (roomId: string, details: Partial<Omit<Room, 'id'>>) => {
+    setRecentRooms(prev => {
+      return prev.map(room => {
+        if (room.id === roomId) {
+          return {
+            ...room,
+            ...details
+          };
+        }
+        return room;
+      });
+    });
+  };
+
+  const connectGithubRepo = (roomId: string, repoUrl: string) => {
+    updateRoomDetails(roomId, { gitHubRepo: repoUrl });
+    toast({
+      title: "GitHub Repository Connected",
+      description: "Your room is now linked to GitHub repository",
     });
   };
 
@@ -160,12 +191,14 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       value={{
         recentRooms,
         addRoom,
+        updateRoomDetails,
         isRoomOwner,
         isParticipant,
         isPendingApproval,
         requestAccess,
         approveAccess,
-        denyAccess
+        denyAccess,
+        connectGithubRepo
       }}
     >
       {children}
