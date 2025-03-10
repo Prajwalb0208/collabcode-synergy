@@ -63,6 +63,34 @@
     width: 2px;
     height: 20px;
   }
+  
+  .file-explorer {
+    @apply bg-muted/30 h-full;
+  }
+  
+  .file-explorer-header {
+    @apply flex items-center justify-between p-3 border-b bg-muted/50;
+  }
+  
+  .file-item {
+    @apply flex items-center px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 transition-colors;
+  }
+  
+  .file-item-active {
+    @apply bg-primary/10 text-primary font-medium;
+  }
+  
+  .editor-container {
+    @apply flex flex-col h-full bg-card;
+  }
+  
+  .editor-header {
+    @apply flex items-center justify-between px-4 py-2 border-b bg-muted/20;
+  }
+  
+  .terminal-container {
+    @apply bg-zinc-900 text-emerald-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto;
+  }
 }
 
 @keyframes fadeIn {
@@ -118,4 +146,28 @@
 
 .cm-selectionMatch {
   @apply bg-muted/50;
+}
+
+/* Custom scrollbar for code areas */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
 }

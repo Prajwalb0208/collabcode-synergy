@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -11,7 +10,7 @@ import VideoCall from "@/components/VideoCall";
 import Chat from "@/components/Chat";
 import MainLayout from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Play, Download, Save, ShieldAlert, MessageCircle, Check, File, Terminal, Code, Video, Bot } from "lucide-react";
+import { Play, Download, Save, ShieldAlert, MessageCircle, Check, File, Terminal, Code, Video, Bot, FileCode, Plus, FolderPlus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -172,6 +171,24 @@ const Room = () => {
     }));
   };
 
+  // File icon helper function
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'js':
+        return <FileCode className="h-4 w-4 text-yellow-500" />;
+      case 'html':
+        return <FileCode className="h-4 w-4 text-orange-500" />;
+      case 'css':
+        return <FileCode className="h-4 w-4 text-blue-500" />;
+      case 'json':
+        return <FileCode className="h-4 w-4 text-green-500" />;
+      default:
+        return <File className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
   // Create a new room or joining an existing room
   if (!roomId) {
     // Creating a new room - no access control needed
@@ -265,13 +282,13 @@ const Room = () => {
 
           {/* Resizable layout */}
           <div className="h-[calc(100vh-12rem)]">
-            <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg overflow-hidden border">
               {/* Main coding area */}
               {visiblePanels.editor && (
                 <ResizablePanel 
                   defaultSize={70} 
                   minSize={30}
-                  className="flex flex-col border rounded-lg overflow-hidden"
+                  className="flex flex-col"
                 >
                   <ResizablePanelGroup direction="vertical">
                     {/* Files and Editor Section */}
@@ -280,25 +297,37 @@ const Room = () => {
                         {/* Files List */}
                         {visiblePanels.files && (
                           <>
-                            <div className="w-[200px] border-r">
-                              <div className="p-3 border-b">
-                                <h3 className="font-medium text-sm">Files</h3>
+                            <div className="w-[240px] file-explorer">
+                              <div className="file-explorer-header">
+                                <h3 className="font-medium text-sm flex items-center">
+                                  <File className="h-4 w-4 mr-2" />
+                                  Files
+                                </h3>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                                    <FolderPlus className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </div>
-                              <ScrollArea className="h-[calc(100%-40px)]">
-                                <div className="px-3 py-2">
+                              <ScrollArea className="h-[calc(100%-40px)] custom-scrollbar">
+                                <div className="p-2">
                                   {files.map((file) => (
                                     <div
                                       key={file.name}
                                       className={`
-                                        px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
+                                        file-item
                                         ${currentFile.name === file.name
-                                          ? "bg-accent text-accent-foreground font-medium"
+                                          ? "file-item-active"
                                           : "hover:bg-muted/50"
                                         }
                                       `}
                                       onClick={() => setCurrentFile(file)}
                                     >
-                                      {file.name}
+                                      {getFileIcon(file.name)}
+                                      <span className="ml-2">{file.name}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -308,7 +337,7 @@ const Room = () => {
                           </>
                         )}
                         {/* Code Editor */}
-                        <div className="flex-1">
+                        <div className="flex-1 editor-container">
                           <CodeEditor 
                             code={currentFile.content}
                             onChange={handleCodeChange}
@@ -323,25 +352,34 @@ const Room = () => {
                       <>
                         <ResizableHandle withHandle />
                         <ResizablePanel defaultSize={30} minSize={15}>
-                          <div className="h-full">
-                            <div className="flex items-center p-2 bg-muted/40 border-b">
-                              <h3 className="text-sm font-medium">Terminal</h3>
+                          <div className="h-full bg-zinc-900">
+                            <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
+                              <h3 className="text-sm font-medium text-zinc-300 flex items-center">
+                                <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
+                                Terminal
+                              </h3>
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="ml-auto"
+                                className="ml-auto text-zinc-300 hover:bg-zinc-700"
                                 onClick={handleRunCode}
                               >
                                 <Play className="h-4 w-4 mr-1" />
                                 Run
                               </Button>
                             </div>
-                            <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
-                              {terminal.map((line, i) => (
-                                <div key={i} className="mb-1">
-                                  {line}
+                            <div className="terminal-container custom-scrollbar">
+                              {terminal.length === 0 ? (
+                                <div className="text-zinc-500 italic">
+                                  Terminal ready. Click 'Run' to execute your code.
                                 </div>
-                              ))}
+                              ) : (
+                                terminal.map((line, i) => (
+                                  <div key={i} className="mb-1">
+                                    {line}
+                                  </div>
+                                ))
+                              )}
                             </div>
                           </div>
                         </ResizablePanel>
@@ -366,7 +404,7 @@ const Room = () => {
                         <ResizablePanel 
                           defaultSize={60} 
                           minSize={30}
-                          className="border rounded-lg overflow-hidden"
+                          className="border-t border-l border-r rounded-t-lg overflow-hidden"
                         >
                           <VideoCall onChatToggle={toggleChat} isChatOpen={isChatOpen} />
                         </ResizablePanel>
@@ -379,7 +417,7 @@ const Room = () => {
                           <ResizablePanel 
                             defaultSize={40} 
                             minSize={20} 
-                            className="border rounded-lg overflow-hidden relative"
+                            className="border rounded-b-lg overflow-hidden relative"
                           >
                             <Tabs defaultValue="ai" className="h-full flex flex-col">
                               <div className="border-b px-3">
@@ -424,7 +462,6 @@ const Room = () => {
     );
   }
 
-  // Check if user can access the room
   if (user && !isRoomOwner(roomId) && !isParticipant(roomId)) {
     if (isPendingApproval(roomId)) {
       return (
@@ -586,13 +623,13 @@ const Room = () => {
 
         {/* Resizable layout */}
         <div className="h-[calc(100vh-12rem)]">
-          <ResizablePanelGroup direction="horizontal" className="h-full">
+          <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg overflow-hidden border">
             {/* Main coding area */}
             {visiblePanels.editor && (
               <ResizablePanel 
                 defaultSize={70} 
                 minSize={30}
-                className="flex flex-col border rounded-lg overflow-hidden"
+                className="flex flex-col"
               >
                 <ResizablePanelGroup direction="vertical">
                   {/* Files and Editor Section */}
@@ -601,25 +638,37 @@ const Room = () => {
                       {/* Files List */}
                       {visiblePanels.files && (
                         <>
-                          <div className="w-[200px] border-r">
-                            <div className="p-3 border-b">
-                              <h3 className="font-medium text-sm">Files</h3>
+                          <div className="w-[240px] file-explorer">
+                            <div className="file-explorer-header">
+                              <h3 className="font-medium text-sm flex items-center">
+                                <File className="h-4 w-4 mr-2" />
+                                Files
+                              </h3>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                  <Plus className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                  <FolderPlus className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </div>
-                            <ScrollArea className="h-[calc(100%-40px)]">
-                              <div className="px-3 py-2">
+                            <ScrollArea className="h-[calc(100%-40px)] custom-scrollbar">
+                              <div className="p-2">
                                 {files.map((file) => (
                                   <div
                                     key={file.name}
                                     className={`
-                                      px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 
+                                      file-item
                                       ${currentFile.name === file.name
-                                        ? "bg-accent text-accent-foreground font-medium"
+                                        ? "file-item-active"
                                         : "hover:bg-muted/50"
                                       }
                                     `}
                                     onClick={() => setCurrentFile(file)}
                                   >
-                                    {file.name}
+                                    {getFileIcon(file.name)}
+                                    <span className="ml-2">{file.name}</span>
                                   </div>
                                 ))}
                               </div>
@@ -629,7 +678,7 @@ const Room = () => {
                         </>
                       )}
                       {/* Code Editor */}
-                      <div className="flex-1">
+                      <div className="flex-1 editor-container">
                         <CodeEditor 
                           code={currentFile.content}
                           onChange={handleCodeChange}
@@ -644,25 +693,34 @@ const Room = () => {
                     <>
                       <ResizableHandle withHandle />
                       <ResizablePanel defaultSize={30} minSize={15}>
-                        <div className="h-full">
-                          <div className="flex items-center p-2 bg-muted/40 border-b">
-                            <h3 className="text-sm font-medium">Terminal</h3>
+                        <div className="h-full bg-zinc-900">
+                          <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
+                            <h3 className="text-sm font-medium text-zinc-300 flex items-center">
+                              <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
+                              Terminal
+                            </h3>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="ml-auto"
+                              className="ml-auto text-zinc-300 hover:bg-zinc-700"
                               onClick={handleRunCode}
                             >
                               <Play className="h-4 w-4 mr-1" />
                               Run
                             </Button>
                           </div>
-                          <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto">
-                            {terminal.map((line, i) => (
-                              <div key={i} className="mb-1">
-                                {line}
+                          <div className="terminal-container custom-scrollbar">
+                            {terminal.length === 0 ? (
+                              <div className="text-zinc-500 italic">
+                                Terminal ready. Click 'Run' to execute your code.
                               </div>
-                            ))}
+                            ) : (
+                              terminal.map((line, i) => (
+                                <div key={i} className="mb-1">
+                                  {line}
+                                </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       </ResizablePanel>
@@ -687,7 +745,7 @@ const Room = () => {
                       <ResizablePanel 
                         defaultSize={60} 
                         minSize={30}
-                        className="border rounded-lg overflow-hidden"
+                        className="border-t border-l border-r rounded-t-lg overflow-hidden"
                       >
                         <VideoCall onChatToggle={toggleChat} isChatOpen={isChatOpen} />
                       </ResizablePanel>
@@ -700,7 +758,7 @@ const Room = () => {
                         <ResizablePanel 
                           defaultSize={40} 
                           minSize={20} 
-                          className="border rounded-lg overflow-hidden relative"
+                          className="border rounded-b-lg overflow-hidden relative"
                         >
                           <Tabs defaultValue="ai" className="h-full flex flex-col">
                             <div className="border-b px-3">
