@@ -11,7 +11,7 @@ import VideoCall from "@/components/VideoCall";
 import Chat from "@/components/Chat";
 import MainLayout from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Play, Download, Save, ShieldAlert, MessageCircle, Check, Terminal, Code, Video, Bot } from "lucide-react";
+import { Play, Download, Save, ShieldAlert, MessageCircle, Check, Terminal, Code, Video, Bot, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import FileExplorer from "@/components/FileExplorer";
 
 interface CodeFile {
   name: string;
@@ -75,8 +76,8 @@ const Room = () => {
     videos: true,
     ai: true
   });
+  const [showFileExplorer, setShowFileExplorer] = useState(true);
 
-  // Add room to history when component mounts
   useEffect(() => {
     if (roomId && user) {
       addRoom(roomId);
@@ -89,7 +90,6 @@ const Room = () => {
       content: newCode
     });
     
-    // Update file in files array
     setFiles(prev => 
       prev.map(file => 
         file.name === currentFile.name 
@@ -102,11 +102,8 @@ const Room = () => {
   const handleRunCode = async () => {
     setTerminal(prev => [...prev, `> Running ${currentFile.name}...`]);
     
-    // For simple JavaScript code, we can use a basic evaluation approach
-    // In a real app, you'd use Judge0 API or a similar service
     if (currentFile.language === "javascript") {
       try {
-        // Capture console.log output
         const originalLog = console.log;
         const logs: string[] = [];
         
@@ -118,14 +115,10 @@ const Room = () => {
           originalLog(...args);
         };
         
-        // Using Function constructor to evaluate the code
-        // This is not secure for production use
         const result = new Function(currentFile.content)();
         
-        // Restore console.log
         console.log = originalLog;
         
-        // Add logs to terminal
         logs.forEach(log => {
           setTerminal(prev => [...prev, log]);
         });
@@ -149,7 +142,6 @@ const Room = () => {
     });
   };
 
-  // Check access control
   const handleRequestAccess = () => {
     if (roomId) {
       requestAccess(roomId);
@@ -176,9 +168,7 @@ const Room = () => {
     setActiveTab(file.name);
   };
 
-  // Create a new room or joining an existing room
   if (!roomId) {
-    // Creating a new room - no access control needed
     return (
       <MainLayout>
         <div className="container h-[calc(100vh-5rem)] py-4">
@@ -202,10 +192,17 @@ const Room = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowFileExplorer(!showFileExplorer)}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                {showFileExplorer ? "Hide Files" : "Show Files"}
+              </Button>
             </div>
           </div>
 
-          {/* Panel visibility controls */}
           <div className="flex items-center gap-4 mb-4 border rounded-md p-2 bg-muted/30">
             <div className="text-sm font-medium">Show panels:</div>
             <div className="flex items-center gap-6">
@@ -256,16 +253,22 @@ const Room = () => {
             </div>
           </div>
 
-          {/* Modern IDE Layout */}
           <div className="h-[calc(100vh-12rem)]">
             <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
-              {/* Main coding area */}
+              {showFileExplorer && (
+                <>
+                  <ResizablePanel defaultSize={15} minSize={10} maxSize={30}>
+                    <FileExplorer />
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                </>
+              )}
+              
               <ResizablePanel 
-                defaultSize={70} 
+                defaultSize={showFileExplorer ? 55 : 70} 
                 minSize={30}
                 className="flex flex-col"
               >
-                {/* Tabs for each file */}
                 <div className="bg-muted/30 px-1.5 pt-1.5 border-b">
                   <Tabs 
                     value={activeTab} 
@@ -290,61 +293,51 @@ const Room = () => {
                 </div>
                 
                 <ResizablePanelGroup direction="vertical">
-                  {/* Code Editor Section */}
-                  {visiblePanels.editor && (
-                    <ResizablePanel defaultSize={70} minSize={30}>
-                      <div className="h-full">
-                        <CodeEditor 
-                          code={currentFile.content}
-                          onChange={handleCodeChange}
-                          language={currentFile.language}
-                        />
-                      </div>
-                    </ResizablePanel>
-                  )}
+                  <ResizablePanel defaultSize={70} minSize={30}>
+                    <div className="h-full">
+                      <CodeEditor 
+                        code={currentFile.content}
+                        onChange={handleCodeChange}
+                        language={currentFile.language}
+                      />
+                    </div>
+                  </ResizablePanel>
                   
-                  {/* Terminal Section */}
-                  {visiblePanels.terminal && (
-                    <>
-                      <ResizableHandle withHandle />
-                      <ResizablePanel defaultSize={30} minSize={15}>
-                        <div className="h-full bg-zinc-900">
-                          <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
-                            <h3 className="text-sm font-medium text-zinc-300 flex items-center">
-                              <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
-                              Terminal
-                            </h3>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="ml-auto text-zinc-300 hover:bg-zinc-700"
-                              onClick={handleRunCode}
-                            >
-                              <Play className="h-4 w-4 mr-1" />
-                              Run
-                            </Button>
+                  <ResizablePanel defaultSize={30} minSize={15}>
+                    <div className="h-full bg-zinc-900">
+                      <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
+                        <h3 className="text-sm font-medium text-zinc-300 flex items-center">
+                          <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
+                          Terminal
+                        </h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="ml-auto text-zinc-300 hover:bg-zinc-700"
+                          onClick={handleRunCode}
+                        >
+                          <Play className="h-4 w-4 mr-1" />
+                          Run
+                        </Button>
+                      </div>
+                      <div className="terminal-container custom-scrollbar">
+                        {terminal.length === 0 ? (
+                          <div className="text-zinc-500 italic">
+                            Terminal ready. Click 'Run' to execute your code.
                           </div>
-                          <div className="terminal-container custom-scrollbar">
-                            {terminal.length === 0 ? (
-                              <div className="text-zinc-500 italic">
-                                Terminal ready. Click 'Run' to execute your code.
-                              </div>
-                            ) : (
-                              terminal.map((line, i) => (
-                                <div key={i} className="mb-1">
-                                  {line}
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </ResizablePanel>
-                    </>
-                  )}
+                        ) : (
+                          terminal.map((line, i) => (
+                            <div key={i} className="mb-1">
+                              {line}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </ResizablePanel>
                 </ResizablePanelGroup>
               </ResizablePanel>
 
-              {/* Right side panels */}
               {(visiblePanels.videos || visiblePanels.ai) && (
                 <>
                   <ResizableHandle withHandle />
@@ -354,7 +347,6 @@ const Room = () => {
                     className="flex flex-col gap-4 relative"
                   >
                     <ResizablePanelGroup direction="vertical">
-                      {/* Video Call */}
                       {visiblePanels.videos && (
                         <ResizablePanel 
                           defaultSize={60} 
@@ -365,7 +357,6 @@ const Room = () => {
                         </ResizablePanel>
                       )}
                       
-                      {/* AI Assistant & Collaboration */}
                       {visiblePanels.ai && (
                         <>
                           {visiblePanels.videos && <ResizableHandle withHandle />}
@@ -400,7 +391,6 @@ const Room = () => {
                       )}
                     </ResizablePanelGroup>
                     
-                    {/* Full-height Chat Panel */}
                     <div className={`
                       absolute inset-y-0 right-0 w-80 bg-background border-l shadow-lg transform transition-transform duration-300 z-30
                       ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
@@ -511,10 +501,17 @@ const Room = () => {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowFileExplorer(!showFileExplorer)}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {showFileExplorer ? "Hide Files" : "Show Files"}
+            </Button>
           </div>
         </div>
 
-        {/* Panel visibility controls */}
         <div className="flex items-center gap-4 mb-4 border rounded-md p-2 bg-muted/30">
           <div className="text-sm font-medium">Show panels:</div>
           <div className="flex items-center gap-6">
@@ -565,16 +562,22 @@ const Room = () => {
           </div>
         </div>
 
-        {/* Modern IDE Layout */}
         <div className="h-[calc(100vh-12rem)]">
           <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
-            {/* Main coding area */}
+            {showFileExplorer && (
+              <>
+                <ResizablePanel defaultSize={15} minSize={10} maxSize={30}>
+                  <FileExplorer />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+              </>
+            )}
+              
             <ResizablePanel 
-              defaultSize={70} 
+              defaultSize={showFileExplorer ? 55 : 70} 
               minSize={30}
               className="flex flex-col"
             >
-              {/* Tabs for each file */}
               <div className="bg-muted/30 px-1.5 pt-1.5 border-b">
                 <Tabs 
                   value={activeTab} 
@@ -599,61 +602,51 @@ const Room = () => {
               </div>
               
               <ResizablePanelGroup direction="vertical">
-                {/* Code Editor Section */}
-                {visiblePanels.editor && (
-                  <ResizablePanel defaultSize={70} minSize={30}>
-                    <div className="h-full">
-                      <CodeEditor 
-                        code={currentFile.content}
-                        onChange={handleCodeChange}
-                        language={currentFile.language}
-                      />
-                    </div>
-                  </ResizablePanel>
-                )}
+                <ResizablePanel defaultSize={70} minSize={30}>
+                  <div className="h-full">
+                    <CodeEditor 
+                      code={currentFile.content}
+                      onChange={handleCodeChange}
+                      language={currentFile.language}
+                    />
+                  </div>
+                </ResizablePanel>
                 
-                {/* Terminal Section */}
-                {visiblePanels.terminal && (
-                  <>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel defaultSize={30} minSize={15}>
-                      <div className="h-full bg-zinc-900">
-                        <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
-                          <h3 className="text-sm font-medium text-zinc-300 flex items-center">
-                            <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
-                            Terminal
-                          </h3>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="ml-auto text-zinc-300 hover:bg-zinc-700"
-                            onClick={handleRunCode}
-                          >
-                            <Play className="h-4 w-4 mr-1" />
-                            Run
-                          </Button>
+                <ResizablePanel defaultSize={30} minSize={15}>
+                  <div className="h-full bg-zinc-900">
+                    <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
+                      <h3 className="text-sm font-medium text-zinc-300 flex items-center">
+                        <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
+                        Terminal
+                      </h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="ml-auto text-zinc-300 hover:bg-zinc-700"
+                        onClick={handleRunCode}
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        Run
+                      </Button>
+                    </div>
+                    <div className="terminal-container custom-scrollbar">
+                      {terminal.length === 0 ? (
+                        <div className="text-zinc-500 italic">
+                          Terminal ready. Click 'Run' to execute your code.
                         </div>
-                        <div className="terminal-container custom-scrollbar">
-                          {terminal.length === 0 ? (
-                            <div className="text-zinc-500 italic">
-                              Terminal ready. Click 'Run' to execute your code.
-                            </div>
-                          ) : (
-                            terminal.map((line, i) => (
-                              <div key={i} className="mb-1">
-                                {line}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </ResizablePanel>
-                  </>
-                )}
+                      ) : (
+                        terminal.map((line, i) => (
+                          <div key={i} className="mb-1">
+                            {line}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
 
-            {/* Right side panels */}
             {(visiblePanels.videos || visiblePanels.ai) && (
               <>
                 <ResizableHandle withHandle />
@@ -663,7 +656,6 @@ const Room = () => {
                   className="flex flex-col gap-4 relative"
                 >
                   <ResizablePanelGroup direction="vertical">
-                    {/* Video Call */}
                     {visiblePanels.videos && (
                       <ResizablePanel 
                         defaultSize={60} 
@@ -674,7 +666,6 @@ const Room = () => {
                       </ResizablePanel>
                     )}
                     
-                    {/* AI Assistant & Collaboration */}
                     {visiblePanels.ai && (
                       <>
                         {visiblePanels.videos && <ResizableHandle withHandle />}
@@ -709,7 +700,6 @@ const Room = () => {
                     )}
                   </ResizablePanelGroup>
                   
-                  {/* Full-height Chat Panel */}
                   <div className={`
                     absolute inset-y-0 right-0 w-80 bg-background border-l shadow-lg transform transition-transform duration-300 z-30
                     ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
