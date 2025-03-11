@@ -2,18 +2,21 @@
 import React, { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import LiveCursors from "./LiveCursors";
-import { File, FileCode, FileText, FileJson } from "lucide-react";
+import { Code, FileCode, FileText, FileJson } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CodeEditorProps {
   code: string;
   onChange: (code: string) => void;
   language?: string;
+  className?: string;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({ 
   code, 
   onChange,
-  language = "javascript" 
+  language = "javascript",
+  className
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +44,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   return (
-    <Card className="w-full h-full rounded-none shadow-none border-0 flex flex-col">
+    <Card className={cn("w-full h-full rounded-none shadow-none border-0 flex flex-col", className)}>
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 bg-muted/20">
         <div className="flex items-center gap-2">
           <div className="flex space-x-2">

@@ -64,22 +64,6 @@
     height: 20px;
   }
   
-  .file-explorer {
-    @apply bg-muted/30 h-full;
-  }
-  
-  .file-explorer-header {
-    @apply flex items-center justify-between p-3 border-b bg-muted/50;
-  }
-  
-  .file-item {
-    @apply flex items-center px-3 py-1.5 text-sm rounded-md cursor-pointer mb-1 transition-colors;
-  }
-  
-  .file-item-active {
-    @apply bg-primary/10 text-primary font-medium;
-  }
-  
   .editor-container {
     @apply flex flex-col h-full bg-card;
   }
@@ -90,6 +74,15 @@
   
   .terminal-container {
     @apply bg-zinc-900 text-emerald-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto;
+  }
+  
+  /* File tabs styling */
+  .file-tab {
+    @apply px-3 py-1.5 text-sm flex items-center gap-1.5 bg-muted/50 rounded-t-md border-r border-t border-l border-transparent;
+  }
+  
+  .file-tab-active {
+    @apply bg-background border-border border-b-transparent text-foreground font-medium;
   }
 }
 
@@ -170,4 +163,46 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Add a subtle background pattern */
+.bg-pattern {
+  background-color: #f9fafb;
+  background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.02' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 5v1H0V0h5z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Terminal output formatting */
+.terminal-container > div {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.terminal-container .error {
+  color: #f56565;
+}
+
+.terminal-container .success {
+  color: #48bb78;
+}
+
+.terminal-container .warning {
+  color: #ed8936;
+}
+
+.terminal-container .prompt {
+  color: #90cdf4;
+}
+
+/* Tab styling for files */
+.tabs-with-border {
+  @apply border-b border-border;
+}
+
+.tab-item {
+  @apply px-4 py-2 text-sm font-medium text-muted-foreground border-b-2 border-transparent hover:text-foreground hover:border-muted-foreground/20 transition-colors;
+}
+
+.tab-item-active {
+  @apply text-foreground border-primary;
 }

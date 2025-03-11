@@ -3,6 +3,7 @@ import { useParams, Navigate } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import CodeEditor from "@/components/CodeEditor";
 import AIAssistant from "@/components/AIAssistant";
 import CollaborationPanel from "@/components/CollaborationPanel";
@@ -10,7 +11,7 @@ import VideoCall from "@/components/VideoCall";
 import Chat from "@/components/Chat";
 import MainLayout from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Play, Download, Save, ShieldAlert, MessageCircle, Check, File, Terminal, Code, Video, Bot, FileCode, Plus, FolderPlus } from "lucide-react";
+import { Play, Download, Save, ShieldAlert, MessageCircle, Check, Terminal, Code, Video, Bot } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,7 +27,6 @@ interface CodeFile {
 }
 
 interface VisiblePanels {
-  files: boolean;
   editor: boolean;
   terminal: boolean;
   videos: boolean;
@@ -68,8 +68,8 @@ const Room = () => {
   const { toast } = useToast();
   const [terminal, setTerminal] = useState<string[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("main.js");
   const [visiblePanels, setVisiblePanels] = useState<VisiblePanels>({
-    files: true,
     editor: true,
     terminal: true,
     videos: true,
@@ -171,22 +171,9 @@ const Room = () => {
     }));
   };
 
-  // File icon helper function
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    
-    switch (extension) {
-      case 'js':
-        return <FileCode className="h-4 w-4 text-yellow-500" />;
-      case 'html':
-        return <FileCode className="h-4 w-4 text-orange-500" />;
-      case 'css':
-        return <FileCode className="h-4 w-4 text-blue-500" />;
-      case 'json':
-        return <FileCode className="h-4 w-4 text-green-500" />;
-      default:
-        return <File className="h-4 w-4 text-gray-500" />;
-    }
+  const handleFileClick = (file: CodeFile) => {
+    setCurrentFile(file);
+    setActiveTab(file.name);
   };
 
   // Create a new room or joining an existing room
@@ -222,17 +209,6 @@ const Room = () => {
           <div className="flex items-center gap-4 mb-4 border rounded-md p-2 bg-muted/30">
             <div className="text-sm font-medium">Show panels:</div>
             <div className="flex items-center gap-6">
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="files" 
-                  checked={visiblePanels.files} 
-                  onCheckedChange={() => togglePanelVisibility('files')}
-                />
-                <Label htmlFor="files" className="flex items-center text-sm">
-                  <File className="h-3.5 w-3.5 mr-1.5" />
-                  Files
-                </Label>
-              </div>
               <div className="flex items-center space-x-2">
                 <Switch 
                   id="editor" 
@@ -280,114 +256,93 @@ const Room = () => {
             </div>
           </div>
 
-          {/* Resizable layout */}
+          {/* Modern IDE Layout */}
           <div className="h-[calc(100vh-12rem)]">
-            <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg overflow-hidden border">
+            <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
               {/* Main coding area */}
-              {visiblePanels.editor && (
-                <ResizablePanel 
-                  defaultSize={70} 
-                  minSize={30}
-                  className="flex flex-col"
-                >
-                  <ResizablePanelGroup direction="vertical">
-                    {/* Files and Editor Section */}
+              <ResizablePanel 
+                defaultSize={70} 
+                minSize={30}
+                className="flex flex-col"
+              >
+                {/* Tabs for each file */}
+                <div className="bg-muted/30 px-1.5 pt-1.5 border-b">
+                  <Tabs 
+                    value={activeTab} 
+                    className="w-full"
+                    onValueChange={(value) => {
+                      const selectedFile = files.find(f => f.name === value);
+                      if (selectedFile) handleFileClick(selectedFile);
+                    }}
+                  >
+                    <TabsList className="bg-transparent h-9 w-full justify-start">
+                      {files.map((file) => (
+                        <TabsTrigger 
+                          key={file.name} 
+                          value={file.name}
+                          className="data-[state=active]:bg-background px-3 py-1.5 h-8"
+                        >
+                          {file.name}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
+                
+                <ResizablePanelGroup direction="vertical">
+                  {/* Code Editor Section */}
+                  {visiblePanels.editor && (
                     <ResizablePanel defaultSize={70} minSize={30}>
-                      <div className="flex h-full">
-                        {/* Files List */}
-                        {visiblePanels.files && (
-                          <>
-                            <div className="w-[240px] file-explorer">
-                              <div className="file-explorer-header">
-                                <h3 className="font-medium text-sm flex items-center">
-                                  <File className="h-4 w-4 mr-2" />
-                                  Files
-                                </h3>
-                                <div className="flex gap-1">
-                                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                                    <Plus className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                                    <FolderPlus className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              </div>
-                              <ScrollArea className="h-[calc(100%-40px)] custom-scrollbar">
-                                <div className="p-2">
-                                  {files.map((file) => (
-                                    <div
-                                      key={file.name}
-                                      className={`
-                                        file-item
-                                        ${currentFile.name === file.name
-                                          ? "file-item-active"
-                                          : "hover:bg-muted/50"
-                                        }
-                                      `}
-                                      onClick={() => setCurrentFile(file)}
-                                    >
-                                      {getFileIcon(file.name)}
-                                      <span className="ml-2">{file.name}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </ScrollArea>
-                            </div>
-                            <ResizableHandle withHandle />
-                          </>
-                        )}
-                        {/* Code Editor */}
-                        <div className="flex-1 editor-container">
-                          <CodeEditor 
-                            code={currentFile.content}
-                            onChange={handleCodeChange}
-                            language={currentFile.language}
-                          />
-                        </div>
+                      <div className="h-full">
+                        <CodeEditor 
+                          code={currentFile.content}
+                          onChange={handleCodeChange}
+                          language={currentFile.language}
+                        />
                       </div>
                     </ResizablePanel>
-                    
-                    {/* Terminal Section */}
-                    {visiblePanels.terminal && (
-                      <>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel defaultSize={30} minSize={15}>
-                          <div className="h-full bg-zinc-900">
-                            <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
-                              <h3 className="text-sm font-medium text-zinc-300 flex items-center">
-                                <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
-                                Terminal
-                              </h3>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="ml-auto text-zinc-300 hover:bg-zinc-700"
-                                onClick={handleRunCode}
-                              >
-                                <Play className="h-4 w-4 mr-1" />
-                                Run
-                              </Button>
-                            </div>
-                            <div className="terminal-container custom-scrollbar">
-                              {terminal.length === 0 ? (
-                                <div className="text-zinc-500 italic">
-                                  Terminal ready. Click 'Run' to execute your code.
-                                </div>
-                              ) : (
-                                terminal.map((line, i) => (
-                                  <div key={i} className="mb-1">
-                                    {line}
-                                  </div>
-                                ))
-                              )}
-                            </div>
+                  )}
+                  
+                  {/* Terminal Section */}
+                  {visiblePanels.terminal && (
+                    <>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel defaultSize={30} minSize={15}>
+                        <div className="h-full bg-zinc-900">
+                          <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
+                            <h3 className="text-sm font-medium text-zinc-300 flex items-center">
+                              <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
+                              Terminal
+                            </h3>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="ml-auto text-zinc-300 hover:bg-zinc-700"
+                              onClick={handleRunCode}
+                            >
+                              <Play className="h-4 w-4 mr-1" />
+                              Run
+                            </Button>
                           </div>
-                        </ResizablePanel>
-                      </>
-                    )}
-                  </ResizablePanelGroup>
-                </ResizablePanel>
-              )}
+                          <div className="terminal-container custom-scrollbar">
+                            {terminal.length === 0 ? (
+                              <div className="text-zinc-500 italic">
+                                Terminal ready. Click 'Run' to execute your code.
+                              </div>
+                            ) : (
+                              terminal.map((line, i) => (
+                                <div key={i} className="mb-1">
+                                  {line}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </ResizablePanel>
+                    </>
+                  )}
+                </ResizablePanelGroup>
+              </ResizablePanel>
 
               {/* Right side panels */}
               {(visiblePanels.videos || visiblePanels.ai) && (
@@ -565,17 +520,6 @@ const Room = () => {
           <div className="flex items-center gap-6">
             <div className="flex items-center space-x-2">
               <Switch 
-                id="files" 
-                checked={visiblePanels.files} 
-                onCheckedChange={() => togglePanelVisibility('files')}
-              />
-              <Label htmlFor="files" className="flex items-center text-sm">
-                <File className="h-3.5 w-3.5 mr-1.5" />
-                Files
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch 
                 id="editor" 
                 checked={visiblePanels.editor} 
                 onCheckedChange={() => togglePanelVisibility('editor')}
@@ -621,114 +565,93 @@ const Room = () => {
           </div>
         </div>
 
-        {/* Resizable layout */}
+        {/* Modern IDE Layout */}
         <div className="h-[calc(100vh-12rem)]">
-          <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg overflow-hidden border">
+          <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
             {/* Main coding area */}
-            {visiblePanels.editor && (
-              <ResizablePanel 
-                defaultSize={70} 
-                minSize={30}
-                className="flex flex-col"
-              >
-                <ResizablePanelGroup direction="vertical">
-                  {/* Files and Editor Section */}
+            <ResizablePanel 
+              defaultSize={70} 
+              minSize={30}
+              className="flex flex-col"
+            >
+              {/* Tabs for each file */}
+              <div className="bg-muted/30 px-1.5 pt-1.5 border-b">
+                <Tabs 
+                  value={activeTab} 
+                  className="w-full"
+                  onValueChange={(value) => {
+                    const selectedFile = files.find(f => f.name === value);
+                    if (selectedFile) handleFileClick(selectedFile);
+                  }}
+                >
+                  <TabsList className="bg-transparent h-9 w-full justify-start">
+                    {files.map((file) => (
+                      <TabsTrigger 
+                        key={file.name} 
+                        value={file.name}
+                        className="data-[state=active]:bg-background px-3 py-1.5 h-8"
+                      >
+                        {file.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
+              
+              <ResizablePanelGroup direction="vertical">
+                {/* Code Editor Section */}
+                {visiblePanels.editor && (
                   <ResizablePanel defaultSize={70} minSize={30}>
-                    <div className="flex h-full">
-                      {/* Files List */}
-                      {visiblePanels.files && (
-                        <>
-                          <div className="w-[240px] file-explorer">
-                            <div className="file-explorer-header">
-                              <h3 className="font-medium text-sm flex items-center">
-                                <File className="h-4 w-4 mr-2" />
-                                Files
-                              </h3>
-                              <div className="flex gap-1">
-                                <Button variant="ghost" size="icon" className="h-6 w-6">
-                                  <Plus className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6">
-                                  <FolderPlus className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                            <ScrollArea className="h-[calc(100%-40px)] custom-scrollbar">
-                              <div className="p-2">
-                                {files.map((file) => (
-                                  <div
-                                    key={file.name}
-                                    className={`
-                                      file-item
-                                      ${currentFile.name === file.name
-                                        ? "file-item-active"
-                                        : "hover:bg-muted/50"
-                                      }
-                                    `}
-                                    onClick={() => setCurrentFile(file)}
-                                  >
-                                    {getFileIcon(file.name)}
-                                    <span className="ml-2">{file.name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </ScrollArea>
-                          </div>
-                          <ResizableHandle withHandle />
-                        </>
-                      )}
-                      {/* Code Editor */}
-                      <div className="flex-1 editor-container">
-                        <CodeEditor 
-                          code={currentFile.content}
-                          onChange={handleCodeChange}
-                          language={currentFile.language}
-                        />
-                      </div>
+                    <div className="h-full">
+                      <CodeEditor 
+                        code={currentFile.content}
+                        onChange={handleCodeChange}
+                        language={currentFile.language}
+                      />
                     </div>
                   </ResizablePanel>
-                  
-                  {/* Terminal Section */}
-                  {visiblePanels.terminal && (
-                    <>
-                      <ResizableHandle withHandle />
-                      <ResizablePanel defaultSize={30} minSize={15}>
-                        <div className="h-full bg-zinc-900">
-                          <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
-                            <h3 className="text-sm font-medium text-zinc-300 flex items-center">
-                              <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
-                              Terminal
-                            </h3>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="ml-auto text-zinc-300 hover:bg-zinc-700"
-                              onClick={handleRunCode}
-                            >
-                              <Play className="h-4 w-4 mr-1" />
-                              Run
-                            </Button>
-                          </div>
-                          <div className="terminal-container custom-scrollbar">
-                            {terminal.length === 0 ? (
-                              <div className="text-zinc-500 italic">
-                                Terminal ready. Click 'Run' to execute your code.
-                              </div>
-                            ) : (
-                              terminal.map((line, i) => (
-                                <div key={i} className="mb-1">
-                                  {line}
-                                </div>
-                              ))
-                            )}
-                          </div>
+                )}
+                
+                {/* Terminal Section */}
+                {visiblePanels.terminal && (
+                  <>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel defaultSize={30} minSize={15}>
+                      <div className="h-full bg-zinc-900">
+                        <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
+                          <h3 className="text-sm font-medium text-zinc-300 flex items-center">
+                            <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
+                            Terminal
+                          </h3>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="ml-auto text-zinc-300 hover:bg-zinc-700"
+                            onClick={handleRunCode}
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            Run
+                          </Button>
                         </div>
-                      </ResizablePanel>
-                    </>
-                  )}
-                </ResizablePanelGroup>
-              </ResizablePanel>
-            )}
+                        <div className="terminal-container custom-scrollbar">
+                          {terminal.length === 0 ? (
+                            <div className="text-zinc-500 italic">
+                              Terminal ready. Click 'Run' to execute your code.
+                            </div>
+                          ) : (
+                            terminal.map((line, i) => (
+                              <div key={i} className="mb-1">
+                                {line}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </ResizablePanel>
+                  </>
+                )}
+              </ResizablePanelGroup>
+            </ResizablePanel>
 
             {/* Right side panels */}
             {(visiblePanels.videos || visiblePanels.ai) && (
