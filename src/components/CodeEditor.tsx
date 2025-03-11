@@ -33,7 +33,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       case "json":
         return <FileJson className="h-4 w-4 text-green-500" />;
       default:
-        return <FileText className="h-4 w-4 text-gray-500" />;
+        return <FileText className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -71,7 +71,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             ))}
           </div>
           <pre 
-            className="p-4 font-mono text-sm outline-none flex-1 overflow-auto language-javascript h-full"
+            className="p-4 font-mono text-sm outline-none flex-1 overflow-auto language-javascript h-full text-foreground"
             contentEditable
             suppressContentEditableWarning
             spellCheck="false"

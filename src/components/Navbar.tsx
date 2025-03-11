@@ -1,99 +1,79 @@
-
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Code, Github, UserPlus, Settings, History, LogIn, LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
-  return (
-    <header className="w-full bg-background/90 backdrop-blur-md border-b border-border/40 fixed top-0 z-50 transition-all duration-200">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2" onClick={() => navigate("/")} role="button">
-          <Code className="h-6 w-6 text-primary" />
-          <span className="font-medium text-xl tracking-tight">CollabCode</span>
-        </div>
-
-        <nav className="hidden md:flex items-center gap-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-            Home
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/rooms")}>
-            <History className="h-4 w-4 mr-2" />
-            Rooms
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/docs")}>
-            Docs
-          </Button>
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" aria-label="GitHub">
-            <Github className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Invite People">
-            <UserPlus className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Settings">
-            <Settings className="h-5 w-5" />
-          </Button>
+  const location = useLocation();
+  
+  // Check if we're on certain pages where the navbar should have a different style
+  const isSpecialPage = ["/new-room", "/room"].some(path => 
+    location.pathname.startsWith(path)
+  );
+  
+  if (isSpecialPage) {
+    return (
+      <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+        <div className="container flex h-16 items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="font-semibold tracking-tight">CollabCode</span>
+          </Link>
           
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="ml-2 flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden md:inline text-sm font-medium">{user.name}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/rooms")}>
-                  <History className="mr-2 h-4 w-4" />
-                  <span>My Rooms</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/settings")}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  logout();
-                  navigate("/");
-                }}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button onClick={() => navigate("/auth")} className="ml-2" variant="default">
-              <LogIn className="mr-2 h-4 w-4" />
-              Login
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/rooms">My Rooms</Link>
             </Button>
-          )}
-          
-          <Button onClick={() => navigate("/new-room")} className="ml-2">
-            New Room
-          </Button>
+          </div>
         </div>
+      </header>
+    );
+  }
+  
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+      <div className="container flex h-16 items-center">
+        <Link to="/" className="mr-6 flex items-center gap-2">
+          <span className="font-semibold tracking-tight">CollabCode</span>
+        </Link>
+        <nav className="flex flex-1 items-center justify-between">
+          <div className="flex gap-6">
+            <Link 
+              to="/" 
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-foreground/80",
+                location.pathname === "/" ? "text-foreground" : "text-foreground/60"
+              )}
+            >
+              Home
+            </Link>
+            <Link 
+              to="/rooms"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-foreground/80",
+                location.pathname === "/rooms" ? "text-foreground" : "text-foreground/60"
+              )}
+            >
+              My Rooms
+            </Link>
+            <Link 
+              to="/docs"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-foreground/80",
+                location.pathname === "/docs" ? "text-foreground" : "text-foreground/60"
+              )}
+            >
+              Docs
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button asChild>
+              <Link to="/new-room">New Room</Link>
+            </Button>
+          </div>
+        </nav>
       </div>
     </header>
   );
