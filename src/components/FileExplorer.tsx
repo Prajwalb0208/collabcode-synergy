@@ -4,6 +4,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { FolderOpen, FolderClosed, FileText, FileCode, ChevronRight, ChevronDown, FilePlus, FolderPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CodeFile } from "@/pages/Room/types";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 interface FileNode {
   id: string;
@@ -18,10 +21,22 @@ interface FileNode {
 interface FileExplorerProps {
   files?: CodeFile[];
   onFileSelect?: (file: CodeFile) => void;
+  onCreateFile?: (fileName: string, language: string, content?: string) => void;
+  onCreateFolder?: (folderName: string) => void;
 }
 
-const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileSelect }) => {
+const FileExplorer: React.FC<FileExplorerProps> = ({ 
+  files, 
+  onFileSelect,
+  onCreateFile,
+  onCreateFolder
+}) => {
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
+  const [isCreatingFile, setIsCreatingFile] = useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+  const [newFolderName, setNewFolderName] = useState("");
+  const { toast } = useToast();
 
   // Convert flat files to tree structure
   useEffect(() => {
@@ -139,6 +154,77 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileSelect }) => {
     }
   };
 
+  const handleCreateFile = () => {
+    setIsCreatingFile(true);
+    setIsCreatingFolder(false);
+  };
+
+  const handleCreateFolder = () => {
+    setIsCreatingFolder(true);
+    setIsCreatingFile(false);
+  };
+
+  const submitNewFile = () => {
+    if (newFileName.trim() === "") {
+      toast({
+        title: "Error",
+        description: "File name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (onCreateFile) {
+      const extension = newFileName.split('.').pop()?.toLowerCase() || '';
+      let language = 'javascript';
+      
+      if (extension === 'html') language = 'html';
+      else if (extension === 'css') language = 'css';
+      else if (extension === 'json') language = 'json';
+      else if (extension === 'ts' || extension === 'tsx') language = 'typescript';
+      else if (extension === 'md') language = 'markdown';
+      
+      onCreateFile(newFileName, language);
+      setNewFileName("");
+      setIsCreatingFile(false);
+      toast({
+        title: "Success",
+        description: `Created new file: ${newFileName}`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "File creation not available in this view"
+      });
+    }
+  };
+
+  const submitNewFolder = () => {
+    if (newFolderName.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Folder name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (onCreateFolder) {
+      onCreateFolder(newFolderName);
+      setNewFolderName("");
+      setIsCreatingFolder(false);
+      toast({
+        title: "Success",
+        description: `Created new folder: ${newFolderName}`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Folder creation not available in this view"
+      });
+    }
+  };
+
   const renderTree = (nodes: FileNode[], level = 0) => {
     return nodes.map(node => (
       <div key={node.id} className="file-tree-item">
@@ -178,18 +264,66 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileSelect }) => {
           <button 
             className="p-1 rounded hover:bg-muted"
             title="New File"
+            onClick={handleCreateFile}
           >
             <FilePlus className="h-3.5 w-3.5" />
           </button>
           <button 
             className="p-1 rounded hover:bg-muted"
             title="New Folder"
+            onClick={handleCreateFolder}
           >
             <FolderPlus className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
-      <ScrollArea className="h-[calc(100%-40px)]">
+      
+      {(isCreatingFile || isCreatingFolder) && (
+        <div className="p-2 border-b flex items-center gap-2">
+          <Input 
+            size={1}
+            placeholder={isCreatingFile ? "File name" : "Folder name"}
+            value={isCreatingFile ? newFileName : newFolderName}
+            onChange={(e) => {
+              if (isCreatingFile) {
+                setNewFileName(e.target.value);
+              } else {
+                setNewFolderName(e.target.value);
+              }
+            }}
+            className="h-7 text-xs"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                isCreatingFile ? submitNewFile() : submitNewFolder();
+              } else if (e.key === 'Escape') {
+                setIsCreatingFile(false);
+                setIsCreatingFolder(false);
+              }
+            }}
+            autoFocus
+          />
+          <Button 
+            size="sm" 
+            className="h-7 text-xs px-2"
+            onClick={isCreatingFile ? submitNewFile : submitNewFolder}
+          >
+            Create
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-7 text-xs px-2"
+            onClick={() => {
+              setIsCreatingFile(false);
+              setIsCreatingFolder(false);
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+      
+      <ScrollArea className={`h-[calc(100%-${(isCreatingFile || isCreatingFolder) ? '80px' : '40px'})]`}>
         <div className="p-2">
           {renderTree(fileTree)}
         </div>

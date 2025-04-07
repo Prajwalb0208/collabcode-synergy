@@ -27,6 +27,7 @@ class SocketService {
       "user-left": [],
       "file-update": [],
       "file-selected": [],
+      "folder-update": [],
       "connect": [],
       "disconnect": [],
       "error": []
@@ -92,6 +93,10 @@ class SocketService {
     } else if (event === "file-selected") {
       setTimeout(() => {
         this.triggerEvent("file-selected", data);
+      }, 100);
+    } else if (event === "folder-update") {
+      setTimeout(() => {
+        this.triggerEvent("folder-update", data);
       }, 100);
     }
   }

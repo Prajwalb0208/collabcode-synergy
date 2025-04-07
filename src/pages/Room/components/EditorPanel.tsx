@@ -18,6 +18,7 @@ interface EditorPanelProps {
   handleRunCode: () => void;
   projectFiles: CodeFile[];
   onCreateFile?: (fileName: string, language: string, content?: string) => void;
+  onCreateFolder?: (folderName: string) => void;
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -30,32 +31,20 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   terminal,
   handleRunCode,
   projectFiles,
-  onCreateFile
+  onCreateFile,
+  onCreateFolder
 }) => {
-  // Function to create a new file
-  const handleNewFile = () => {
-    if (onCreateFile) {
-      const fileName = prompt("Enter file name:", "newfile.js");
-      if (fileName) {
-        const extension = fileName.split('.').pop()?.toLowerCase() || '';
-        let language = 'javascript';
-        
-        if (extension === 'html') language = 'html';
-        else if (extension === 'css') language = 'css';
-        else if (extension === 'json') language = 'json';
-        else if (extension === 'ts' || extension === 'tsx') language = 'typescript';
-        
-        onCreateFile(fileName, language);
-      }
-    }
-  };
-
   return (
     <>
       {showFileExplorer && (
         <>
           <ResizablePanel defaultSize={15} minSize={10} maxSize={30}>
-            <FileExplorer files={projectFiles} onFileSelect={handleFileClick} />
+            <FileExplorer 
+              files={projectFiles} 
+              onFileSelect={handleFileClick} 
+              onCreateFile={onCreateFile}
+              onCreateFolder={onCreateFolder}
+            />
           </ResizablePanel>
           <ResizableHandle withHandle />
         </>
@@ -87,15 +76,6 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   </TabsTrigger>
                 ))}
               </TabsList>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="mr-2" 
-                onClick={handleNewFile}
-                title="Create new file"
-              >
-                <FilePlus className="h-4 w-4" />
-              </Button>
             </div>
           </Tabs>
         </div>

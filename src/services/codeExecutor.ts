@@ -68,6 +68,17 @@ export const executeJavaScript = (code: string): {
 };
 
 /**
+ * Creates an HTML preview from the given HTML code
+ * @param html The HTML code to preview
+ * @returns HTML document as a data URL
+ */
+export const createHtmlPreview = (html: string): string => {
+  // Create a data URL from the HTML content
+  const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  return dataUrl;
+};
+
+/**
  * Execute code based on its language
  * @param code The code to execute
  * @param language The programming language
@@ -104,7 +115,24 @@ export const executeCode = (code: string, language: string): string[] => {
       break;
       
     case "html":
-      output.push("HTML execution is available in the preview panel.");
+      try {
+        // Generate HTML preview
+        const previewUrl = createHtmlPreview(code);
+        output.push("HTML execution prepared.");
+        output.push(`Preview available at: ${previewUrl}`);
+        
+        // Open preview in a new tab/window if we're in a browser environment
+        if (typeof window !== 'undefined') {
+          const previewWindow = window.open(previewUrl, '_blank', 'width=800,height=600');
+          if (previewWindow) {
+            output.push("HTML preview opened in a new window.");
+          } else {
+            output.push("Warning: Pop-up blocker may have prevented opening the preview.");
+          }
+        }
+      } catch (error) {
+        output.push(`Error creating HTML preview: ${error instanceof Error ? error.message : String(error)}`);
+      }
       break;
       
     case "css":
@@ -113,7 +141,7 @@ export const executeCode = (code: string, language: string): string[] => {
       
     default:
       output.push(`Execution for ${language} is not supported.`);
-      output.push("Only JavaScript/TypeScript execution is available.");
+      output.push("Only JavaScript/TypeScript and HTML execution is available.");
   }
   
   return output;

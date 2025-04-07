@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
@@ -58,6 +58,7 @@ const Room = () => {
     ai: true
   });
   const [showFileExplorer, setShowFileExplorer] = useState(true);
+  const [folders, setFolders] = useState<string[]>([]);
 
   useEffect(() => {
     if (roomId && user) {
@@ -80,6 +81,13 @@ const Room = () => {
         if (selectedFile) {
           setCurrentFile(selectedFile);
           setActiveTab(selectedFile.name);
+        }
+      });
+      
+      // Listen for folder updates
+      socketService.on("folder-update", (data) => {
+        if (data.folders) {
+          setFolders(data.folders);
         }
       });
     }
@@ -157,24 +165,63 @@ const Room = () => {
 
   // Create a new file
   const handleCreateFile = (fileName: string, language: string, content: string = "") => {
+    // Check if file already exists
+    if (files.some(file => file.name === fileName)) {
+      toast({
+        title: "Error",
+        description: `File ${fileName} already exists`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const newFile: CodeFile = {
       name: fileName,
       language,
-      content: content || `// New ${language} file`
+      content: content || (language === 'html' ? 
+        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>New Document</title>\n</head>\n<body>\n  <h1>Hello World</h1>\n</body>\n</html>" : 
+        `// New ${language} file`)
     };
     
-    setFiles(prev => [...prev, newFile]);
+    const updatedFiles = [...files, newFile];
+    setFiles(updatedFiles);
     setCurrentFile(newFile);
     setActiveTab(fileName);
     
     // Emit file update to other users
     if (roomId) {
-      socketService.emit("file-update", { files: [...files, newFile], roomId });
+      socketService.emit("file-update", { files: updatedFiles, roomId });
     }
     
     toast({
       title: "File Created",
       description: `Created new file: ${fileName}`,
+    });
+  };
+  
+  // Create a new folder
+  const handleCreateFolder = (folderName: string) => {
+    // Check if folder already exists
+    if (folders.includes(folderName)) {
+      toast({
+        title: "Error",
+        description: `Folder ${folderName} already exists`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedFolders = [...folders, folderName];
+    setFolders(updatedFolders);
+    
+    // Emit folder update to other users
+    if (roomId) {
+      socketService.emit("folder-update", { folders: updatedFolders, roomId });
+    }
+    
+    toast({
+      title: "Folder Created",
+      description: `Created new folder: ${folderName}`,
     });
   };
 
@@ -216,6 +263,7 @@ const Room = () => {
               handleRunCode={handleRunCode}
               projectFiles={files}
               onCreateFile={handleCreateFile}
+              onCreateFolder={handleCreateFolder}
             />
 
             {(visiblePanels.videos || visiblePanels.ai) && (
