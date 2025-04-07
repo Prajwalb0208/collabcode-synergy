@@ -13,6 +13,7 @@ import CollaborationSidebar from "./components/CollaborationSidebar";
 import AccessRequest from "./components/AccessRequest";
 import PendingApproval from "./components/PendingApproval";
 import { CodeFile, VisiblePanels } from "./types";
+import { socketService } from "@/services/socketService";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -61,8 +62,32 @@ const Room = () => {
   useEffect(() => {
     if (roomId && user) {
       addRoom(roomId);
+      
+      // Listen for file updates from other users
+      socketService.on("file-update", (data) => {
+        if (data.files) {
+          setFiles(data.files);
+          const updatedCurrentFile = data.files.find((f: CodeFile) => f.name === currentFile.name);
+          if (updatedCurrentFile) {
+            setCurrentFile(updatedCurrentFile);
+          }
+        }
+      });
+      
+      // Listen for file selection from other users
+      socketService.on("file-selected", (data) => {
+        const selectedFile = files.find(f => f.name === data.fileName);
+        if (selectedFile) {
+          setCurrentFile(selectedFile);
+          setActiveTab(selectedFile.name);
+        }
+      });
     }
-  }, [roomId, addRoom, user]);
+    
+    return () => {
+      socketService.disconnect();
+    };
+  }, [roomId, addRoom, user, files, currentFile.name]);
 
   const handleCodeChange = (newCode: string) => {
     setCurrentFile({
@@ -70,13 +95,18 @@ const Room = () => {
       content: newCode
     });
     
-    setFiles(prev => 
-      prev.map(file => 
-        file.name === currentFile.name 
-          ? { ...file, content: newCode } 
-          : file
-      )
+    const updatedFiles = files.map(file => 
+      file.name === currentFile.name 
+        ? { ...file, content: newCode } 
+        : file
     );
+    
+    setFiles(updatedFiles);
+    
+    // Emit file update to other users
+    if (roomId) {
+      socketService.emit("file-update", { files: updatedFiles, roomId });
+    }
   };
 
   const handleRunCode = async () => {
@@ -118,6 +148,34 @@ const Room = () => {
   const handleFileClick = (file: CodeFile) => {
     setCurrentFile(file);
     setActiveTab(file.name);
+    
+    // Emit file selection to other users
+    if (roomId) {
+      socketService.emit("file-selected", { fileName: file.name, roomId });
+    }
+  };
+
+  // Create a new file
+  const handleCreateFile = (fileName: string, language: string, content: string = "") => {
+    const newFile: CodeFile = {
+      name: fileName,
+      language,
+      content: content || `// New ${language} file`
+    };
+    
+    setFiles(prev => [...prev, newFile]);
+    setCurrentFile(newFile);
+    setActiveTab(fileName);
+    
+    // Emit file update to other users
+    if (roomId) {
+      socketService.emit("file-update", { files: [...files, newFile], roomId });
+    }
+    
+    toast({
+      title: "File Created",
+      description: `Created new file: ${fileName}`,
+    });
   };
 
   // Handle access control
@@ -137,6 +195,7 @@ const Room = () => {
           handleRunCode={handleRunCode}
           showFileExplorer={showFileExplorer}
           setShowFileExplorer={setShowFileExplorer}
+          onCreateFile={handleCreateFile}
         />
 
         <PanelToggleBar 
@@ -155,6 +214,8 @@ const Room = () => {
               handleCodeChange={handleCodeChange}
               terminal={terminal}
               handleRunCode={handleRunCode}
+              projectFiles={files}
+              onCreateFile={handleCreateFile}
             />
 
             {(visiblePanels.videos || visiblePanels.ai) && (
@@ -165,6 +226,7 @@ const Room = () => {
                 roomId={roomId || ""}
                 isRoomOwner={roomId ? isRoomOwner(roomId) : false}
                 currentFile={currentFile}
+                files={files}
               />
             )}
           </ResizablePanelGroup>

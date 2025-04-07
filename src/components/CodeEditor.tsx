@@ -8,6 +8,7 @@ import { socketService } from "@/services/socketService";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import Editor from "@monaco-editor/react";
 
 interface CodeEditorProps {
   code: string;
@@ -22,13 +23,36 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   language = "javascript",
   className
 }) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const preRef = useRef<HTMLPreElement>(null);
+  const editorRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { roomId } = useParams<{ roomId: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
   const [collaborators, setCollaborators] = useState<{id: string, name: string}[]>([]);
   
+  // Function to handle editor mount
+  const handleEditorDidMount = (editor: any) => {
+    editorRef.current = editor;
+  };
+
+  // Map language to Monaco language identifier
+  const getMonacoLanguage = () => {
+    switch (language) {
+      case "javascript":
+        return "javascript";
+      case "typescript":
+        return "typescript";
+      case "html":
+        return "html";
+      case "css":
+        return "css";
+      case "json":
+        return "json";
+      default:
+        return "plaintext";
+    }
+  };
+
   // Initialize socket connection when the component mounts
   useEffect(() => {
     if (roomId && user?.id) {
@@ -57,11 +81,18 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           });
         });
       
+      // Listen for code changes from other users
+      socketService.on("code-change", (data) => {
+        if (data.code !== code) {
+          onChange(data.code);
+        }
+      });
+      
       return () => {
         socketService.disconnect();
       };
     }
-  }, [roomId, user, toast]);
+  }, [roomId, user, toast, code, onChange]);
 
   // Get appropriate language icon
   const getLanguageIcon = () => {
@@ -80,21 +111,22 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   };
 
-  // Handle editor content changes and sync with collaborators
-  const handleInput = (e: React.FormEvent<HTMLPreElement>) => {
-    const content = e.currentTarget.textContent || "";
-    onChange(content);
-    
-    // Emit code changes to collaborators
-    if (roomId) {
-      socketService.emitCodeChange(content, "current-file", language);
+  // Handle value change in Monaco editor
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined) {
+      onChange(value);
+      
+      // Emit code changes to collaborators
+      if (roomId) {
+        socketService.emitCodeChange(value, "current-file", language);
+      }
     }
   };
   
   // Update cursor position when the mouse moves
-  const handleMouseMove = (e: React.MouseEvent<HTMLPreElement>) => {
-    if (editorRef.current) {
-      const rect = editorRef.current.getBoundingClientRect();
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (containerRef.current && editorRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
@@ -102,26 +134,24 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       socketService.emitCursorPosition(x, y);
     }
   };
-  
-  // Set up tabbing support for the code editor
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!preRef.current || document.activeElement !== preRef.current) return;
-      
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        
-        // Insert two spaces for tab
-        document.execCommand('insertText', false, '  ');
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+
+  const editorOptions = {
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    tabSize: 2,
+    fontSize: 14,
+    lineNumbers: "on",
+    folding: true,
+    wordWrap: "on" as const,
+  };
 
   return (
-    <Card className={cn("w-full h-full rounded-none shadow-none border-0 flex flex-col", className)}>
+    <Card 
+      className={cn("w-full h-full rounded-none shadow-none border-0 flex flex-col", className)}
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+    >
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 bg-muted/20">
         <div className="flex items-center gap-2">
           <div className="flex space-x-2">
@@ -139,26 +169,18 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
       </div>
 
-      <div className="relative h-full overflow-auto custom-scrollbar flex-1" ref={editorRef}>
-        <LiveCursors containerRef={editorRef} />
-        <div className="flex h-full">
-          <div className="text-right p-4 select-none text-muted-foreground/50 bg-code/50 border-r border-border/30 font-mono text-sm w-[60px] flex-shrink-0">
-            {Array.from({ length: code.split('\n').length || 1 }).map((_, i) => (
-              <div key={i} className="py-[3px]">{i + 1}</div>
-            ))}
-          </div>
-          <pre 
-            ref={preRef}
-            className="p-4 font-mono text-sm outline-none flex-1 overflow-auto language-javascript h-full text-foreground"
-            contentEditable
-            suppressContentEditableWarning
-            spellCheck="false"
-            onInput={handleInput}
-            onMouseMove={handleMouseMove}
-          >
-            {code}
-          </pre>
-        </div>
+      <div className="relative h-full overflow-hidden flex-1">
+        <LiveCursors containerRef={containerRef} />
+        <Editor
+          height="100%"
+          defaultLanguage={getMonacoLanguage()}
+          language={getMonacoLanguage()}
+          value={code}
+          theme="vs-dark"
+          onChange={handleEditorChange}
+          onMount={handleEditorDidMount}
+          options={editorOptions}
+        />
       </div>
     </Card>
   );

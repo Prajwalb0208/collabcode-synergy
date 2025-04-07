@@ -2,7 +2,7 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Terminal, Play } from "lucide-react";
+import { Terminal, Play, FilePlus } from "lucide-react";
 import CodeEditor from "@/components/CodeEditor";
 import FileExplorer from "@/components/FileExplorer";
 import { CodeFile } from "../types";
@@ -16,6 +16,8 @@ interface EditorPanelProps {
   handleCodeChange: (code: string) => void;
   terminal: string[];
   handleRunCode: () => void;
+  projectFiles: CodeFile[];
+  onCreateFile?: (fileName: string, language: string, content?: string) => void;
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -26,14 +28,34 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   currentFile,
   handleCodeChange,
   terminal,
-  handleRunCode
+  handleRunCode,
+  projectFiles,
+  onCreateFile
 }) => {
+  // Function to create a new file
+  const handleNewFile = () => {
+    if (onCreateFile) {
+      const fileName = prompt("Enter file name:", "newfile.js");
+      if (fileName) {
+        const extension = fileName.split('.').pop()?.toLowerCase() || '';
+        let language = 'javascript';
+        
+        if (extension === 'html') language = 'html';
+        else if (extension === 'css') language = 'css';
+        else if (extension === 'json') language = 'json';
+        else if (extension === 'ts' || extension === 'tsx') language = 'typescript';
+        
+        onCreateFile(fileName, language);
+      }
+    }
+  };
+
   return (
     <>
       {showFileExplorer && (
         <>
           <ResizablePanel defaultSize={15} minSize={10} maxSize={30}>
-            <FileExplorer />
+            <FileExplorer files={projectFiles} onFileSelect={handleFileClick} />
           </ResizablePanel>
           <ResizableHandle withHandle />
         </>
@@ -53,17 +75,28 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               if (selectedFile) handleFileClick(selectedFile);
             }}
           >
-            <TabsList className="bg-transparent h-9 w-full justify-start">
-              {files.map((file) => (
-                <TabsTrigger 
-                  key={file.name} 
-                  value={file.name}
-                  className="data-[state=active]:bg-background px-3 py-1.5 h-8"
-                >
-                  {file.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="flex justify-between items-center">
+              <TabsList className="bg-transparent h-9 justify-start">
+                {files.map((file) => (
+                  <TabsTrigger 
+                    key={file.name} 
+                    value={file.name}
+                    className="data-[state=active]:bg-background px-3 py-1.5 h-8"
+                  >
+                    {file.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="mr-2" 
+                onClick={handleNewFile}
+                title="Create new file"
+              >
+                <FilePlus className="h-4 w-4" />
+              </Button>
+            </div>
           </Tabs>
         </div>
         
@@ -95,14 +128,14 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   Run
                 </Button>
               </div>
-              <div className="terminal-container custom-scrollbar">
+              <div className="terminal-container p-2 text-zinc-300 font-mono text-sm h-[calc(100%-40px)] overflow-auto custom-scrollbar">
                 {terminal.length === 0 ? (
-                  <div className="text-zinc-500 italic">
+                  <div className="text-zinc-500 italic p-2">
                     Terminal ready. Click 'Run' to execute your code.
                   </div>
                 ) : (
                   terminal.map((line, i) => (
-                    <div key={i} className="mb-1">
+                    <div key={i} className="mb-1 whitespace-pre-wrap">
                       {line}
                     </div>
                   ))

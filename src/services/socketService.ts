@@ -1,6 +1,7 @@
 
 import { io, Socket } from "socket.io-client";
 import { toast } from "@/components/ui/use-toast";
+import { CodeFile } from "@/pages/Room/types";
 
 // For demo purposes, we'll use a mock socket implementation
 // In a real app, you would connect to an actual WebSocket server
@@ -24,6 +25,8 @@ class SocketService {
       "cursor-move": [],
       "user-joined": [],
       "user-left": [],
+      "file-update": [],
+      "file-selected": [],
       "connect": [],
       "disconnect": [],
       "error": []
@@ -74,6 +77,25 @@ class SocketService {
     }
   }
 
+  // Generic emit method for any event
+  emit(event: string, data: any) {
+    if (!this.isConnected || !this.roomId) return;
+    
+    // In a real implementation, we would emit to the server:
+    // this.socket.emit(event, { ...data, roomId: this.roomId });
+    
+    // For mock implementation, we'll simulate broadcasts to other users
+    if (event === "file-update") {
+      setTimeout(() => {
+        this.triggerEvent("file-update", data);
+      }, 100);
+    } else if (event === "file-selected") {
+      setTimeout(() => {
+        this.triggerEvent("file-selected", data);
+      }, 100);
+    }
+  }
+
   // Emit code changes to other users
   emitCodeChange(code: string, file: string, language: string) {
     if (!this.isConnected || !this.roomId) return;
@@ -83,7 +105,7 @@ class SocketService {
     
     // Simulated response from other users
     setTimeout(() => {
-      // We don't trigger the local event since the local state is already updated
+      this.triggerEvent("code-change", { code, file, language });
     }, 100);
   }
 
