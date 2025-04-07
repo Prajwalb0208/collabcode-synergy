@@ -8,9 +8,10 @@ import { toast } from "@/components/ui/use-toast";
 interface VideoCallProps {
   onChatToggle?: () => void;
   isChatOpen?: boolean;
+  roomId?: string;
 }
 
-const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen }) => {
+const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId }) => {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);

@@ -141,7 +141,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     automaticLayout: true,
     tabSize: 2,
     fontSize: 14,
-    lineNumbers: "on",
+    lineNumbers: "on" as const,
     folding: true,
     wordWrap: "on" as const,
   };

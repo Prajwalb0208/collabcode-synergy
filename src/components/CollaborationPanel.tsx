@@ -12,15 +12,18 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import FileExplorer from "./FileExplorer";
 import { Input } from "@/components/ui/input";
+import { CodeFile } from "@/pages/Room/types";
 
 interface CollaborationPanelProps {
   isOwner?: boolean;
   roomId: string;
+  files?: CodeFile[];
 }
 
 const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   isOwner = false,
-  roomId
+  roomId,
+  files
 }) => {
   const [activeTab, setActiveTab] = useState("collaborators");
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -171,7 +174,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
           </TabsContent>
           
           <TabsContent value="files" className="flex-1 overflow-hidden data-[state=active]:h-full">
-            <FileExplorer />
+            <FileExplorer files={files} />
           </TabsContent>
           
           <TabsContent value="git" className="p-4 data-[state=active]:h-full overflow-auto">

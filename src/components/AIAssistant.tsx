@@ -3,12 +3,13 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
+import { CodeFile } from "@/pages/Room/types";
 
 interface AIAssistantProps {
-  code: string;
+  currentFile: CodeFile;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ code }) => {
+const AIAssistant: React.FC<AIAssistantProps> = ({ currentFile }) => {
   const [suggestions, setSuggestions] = useState<string[]>([
     "Consider using a ternary operator here for more concise code.",
     "You could refactor this loop into a map() function for better readability.",

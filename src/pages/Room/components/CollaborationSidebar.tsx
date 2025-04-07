@@ -33,7 +33,11 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
           {visiblePanels.videos && (
             <>
               <ResizablePanel defaultSize={40} minSize={15}>
-                <VideoCall roomId={roomId} />
+                <VideoCall 
+                  roomId={roomId} 
+                  onChatToggle={toggleChat} 
+                  isChatOpen={isChatOpen} 
+                />
               </ResizablePanel>
               <ResizableHandle withHandle />
             </>
