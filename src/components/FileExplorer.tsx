@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FolderOpen, FolderClosed, FileText, FileCode, ChevronRight, ChevronDown } from "lucide-react";
@@ -81,7 +80,6 @@ const FileExplorer: React.FC = () => {
       return node.expanded ? <FolderOpen className="h-4 w-4 text-yellow-500" /> : <FolderClosed className="h-4 w-4 text-yellow-500" />;
     }
     
-    // File icons based on language
     switch (node.language) {
       case "typescript":
         return <FileCode className="h-4 w-4 text-blue-500" />;
@@ -96,6 +94,56 @@ const FileExplorer: React.FC = () => {
     }
   };
 
+  const handleCreateFile = (parentId: string, type: 'file' | 'folder') => {
+    const newName = type === 'file' ? 'newFile.js' : 'newFolder';
+    const newId = `new-${Date.now()}`;
+    
+    setFiles(prevFiles => {
+      const addNewNode = (nodes: FileNode[]): FileNode[] => {
+        return nodes.map(node => {
+          if (node.id === parentId) {
+            return {
+              ...node,
+              expanded: true,
+              children: [
+                ...(node.children || []),
+                {
+                  id: newId,
+                  name: newName,
+                  type,
+                  ...(type === 'folder' ? { children: [], expanded: true } : { language: 'javascript' })
+                }
+              ]
+            };
+          }
+          if (node.children) {
+            return { ...node, children: addNewNode(node.children) };
+          }
+          return node;
+        });
+      };
+      
+      if (!parentId) {
+        return [
+          ...prevFiles,
+          {
+            id: newId,
+            name: newName,
+            type,
+            ...(type === 'folder' ? { children: [], expanded: true } : { language: 'javascript' })
+          }
+        ];
+      }
+      
+      return addNewNode(prevFiles);
+    });
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
+    e.preventDefault();
+    console.log(`Context menu for ${node.name}`);
+  };
+
   const renderTree = (nodes: FileNode[], level = 0) => {
     return nodes.map(node => (
       <div key={node.id} className="file-tree-item">
@@ -107,6 +155,8 @@ const FileExplorer: React.FC = () => {
           )}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
           onClick={() => node.type === "folder" && toggleFolder(node.id)}
+          onContextMenu={(e) => handleContextMenu(e, node)}
+          onDoubleClick={() => console.log(`Double-clicked ${node.name}`)}
         >
           {node.type === "folder" && (
             node.expanded ? 
@@ -129,8 +179,24 @@ const FileExplorer: React.FC = () => {
 
   return (
     <div className="h-full border-t">
-      <div className="p-2 border-b bg-muted/30">
+      <div className="p-2 border-b bg-muted/30 flex justify-between items-center">
         <h3 className="text-sm font-medium">Project Files</h3>
+        <div className="flex gap-1">
+          <button 
+            className="p-1 rounded hover:bg-muted"
+            onClick={() => handleCreateFile(null, 'file')}
+            title="New File"
+          >
+            <FileText className="h-3.5 w-3.5" />
+          </button>
+          <button 
+            className="p-1 rounded hover:bg-muted"
+            onClick={() => handleCreateFile(null, 'folder')}
+            title="New Folder"
+          >
+            <FolderClosed className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
       <ScrollArea className="h-[calc(100%-40px)]">
         <div className="p-2">

@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from "react";
+import { socketService } from "@/services/socketService";
 
 interface Cursor {
   id: string;
@@ -14,25 +15,68 @@ interface LiveCursorsProps {
 }
 
 const LiveCursors: React.FC<LiveCursorsProps> = ({ containerRef }) => {
-  // Mock cursors - in a real app, these would come from a real-time connection
   const [cursors, setCursors] = useState<Cursor[]>([
     { id: "user1", x: 150, y: 120, color: "#3b82f6", name: "Alice" },
     { id: "user2", x: 250, y: 220, color: "#10b981", name: "Bob" }
   ]);
 
   useEffect(() => {
-    // Simulate cursor movement
+    // Set up listeners for cursor movements from other users
+    const handleCursorMove = (data: { userId: string; x: number; y: number; name: string }) => {
+      setCursors(prev => {
+        // Find if this user cursor already exists
+        const existingIndex = prev.findIndex(c => c.id === data.userId);
+        
+        if (existingIndex >= 0) {
+          // Update existing cursor
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            x: data.x,
+            y: data.y
+          };
+          return updated;
+        } else {
+          // Add new cursor with a random color
+          const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+          const randomColor = colors[Math.floor(Math.random() * colors.length)];
+          
+          return [...prev, {
+            id: data.userId,
+            x: data.x,
+            y: data.y,
+            color: randomColor,
+            name: data.name
+          }];
+        }
+      });
+    };
+
+    socketService.on("cursor-move", handleCursorMove);
+    
+    // Handle users joining and leaving
+    socketService.on("user-joined", (data) => {
+      // User cursors are added when they move their mouse
+    });
+    
+    socketService.on("user-left", (data) => {
+      setCursors(prev => prev.filter(c => c.id !== data.userId));
+    });
+
+    // For demo purposes - animate cursors slightly
     const interval = setInterval(() => {
       setCursors(prev => 
         prev.map(cursor => ({
           ...cursor,
-          x: cursor.x + Math.random() * 10 - 5,
-          y: cursor.y + Math.random() * 10 - 5
+          x: cursor.x + (Math.random() * 6 - 3),
+          y: cursor.y + (Math.random() * 6 - 3)
         }))
       );
-    }, 1000);
+    }, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   if (!containerRef.current) return null;

@@ -100,41 +100,13 @@ const Room = () => {
   };
 
   const handleRunCode = async () => {
-    setTerminal(prev => [...prev, `> Running ${currentFile.name}...`]);
+    const { executeCode } = await import('@/services/codeExecutor');
     
-    if (currentFile.language === "javascript") {
-      try {
-        const originalLog = console.log;
-        const logs: string[] = [];
-        
-        console.log = (...args) => {
-          const output = args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-          ).join(' ');
-          logs.push(output);
-          originalLog(...args);
-        };
-        
-        const result = new Function(currentFile.content)();
-        
-        console.log = originalLog;
-        
-        logs.forEach(log => {
-          setTerminal(prev => [...prev, log]);
-        });
-        
-        if (result !== undefined) {
-          setTerminal(prev => [...prev, `=> ${result}`]);
-        }
-        
-        setTerminal(prev => [...prev, "Execution completed."]);
-      } catch (error) {
-        setTerminal(prev => [...prev, `Error: ${error.message}`]);
-      }
-    } else {
-      setTerminal(prev => [...prev, "Execution for this language is not supported in this demo."]);
-      setTerminal(prev => [...prev, "In a real app, we would use Judge0 API here."]);
-    }
+    setTerminal([]);
+    
+    const output = executeCode(currentFile.content, currentFile.language);
+    
+    setTerminal(output);
     
     toast({
       title: "Code Execution",
