@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { LogIn, UserPlus, Github, Mail } from "lucide-react";
+import { LogIn, UserPlus, Github, Mail, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
 
 const Auth = () => {
   const { user, login, register, loginWithProvider, isLoading } = useAuth();
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({ name: "", email: "", password: "" });
   const [activeTab, setActiveTab] = useState("login");
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // If already logged in, redirect to home
@@ -24,28 +27,57 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(loginForm.email, loginForm.password);
-    if (success) {
-      navigate("/");
+    setError(null);
+
+    try {
+      const success = await login(loginForm.email, loginForm.password);
+      if (success) {
+        navigate("/");
+      }
+    } catch (error: any) {
+      setError(error.message || "Login failed. Please check your credentials.");
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await register(
-      registerForm.name,
-      registerForm.email,
-      registerForm.password
-    );
-    if (success) {
-      navigate("/");
+    setError(null);
+
+    if (registerForm.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    try {
+      const success = await register(
+        registerForm.name,
+        registerForm.email,
+        registerForm.password
+      );
+      if (success) {
+        navigate("/");
+      }
+    } catch (error: any) {
+      setError(error.message || "Registration failed. Please try again.");
     }
   };
 
   const handleProviderLogin = async (provider: "google" | "github") => {
-    const success = await loginWithProvider(provider);
-    if (success) {
-      navigate("/");
+    setError(null);
+    
+    try {
+      toast({
+        title: "Connecting to " + provider,
+        description: "Redirecting to authentication provider...",
+      });
+      
+      const success = await loginWithProvider(provider);
+      if (success) {
+        navigate("/");
+      }
+    } catch (error: any) {
+      console.error(`${provider} login error:`, error);
+      setError(`Authentication with ${provider} failed. Please try again.`);
     }
   };
 
@@ -57,6 +89,14 @@ const Auth = () => {
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="register">Register</TabsTrigger>
           </TabsList>
+          
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           
           <TabsContent value="login">
             <Card>
@@ -242,7 +282,9 @@ const Auth = () => {
                         onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                         placeholder="••••••••"
                         required
+                        minLength={6}
                       />
+                      <p className="text-xs text-muted-foreground">Password must be at least 6 characters long</p>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? "Loading..." : "Register"}

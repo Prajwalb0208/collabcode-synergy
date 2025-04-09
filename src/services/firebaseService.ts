@@ -15,12 +15,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD4rl7yKT0aCJTSzKV3tF2c-Kn_3c7mxOY",
-  authDomain: "collab-code-app.firebaseapp.com",
-  projectId: "collab-code-app",
-  storageBucket: "collab-code-app.appspot.com",
-  messagingSenderId: "851236985462",
-  appId: "1:851236985462:web:8b5a33f6e3c82b4f9e3c1c"
+  apiKey: "AIzaSyCKa0hwzNPpRWV-yih4NHSGg3Zy3q97jjI",
+  authDomain: "collab-code-platform.firebaseapp.com",
+  projectId: "collab-code-platform",
+  storageBucket: "collab-code-platform.appspot.com",
+  messagingSenderId: "951633825792",
+  appId: "1:951633825792:web:a3e5d1d1e1c3e5f0a3b8c9"
 };
 
 // Initialize Firebase

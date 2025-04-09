@@ -1,115 +1,49 @@
 
-import React, { useEffect, useState } from "react";
-import { socketService } from "@/services/socketService";
+import React, { RefObject } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface Cursor {
-  id: string;
-  x: number;
-  y: number;
-  color: string;
-  name: string;
+export interface LiveCursorsProps {
+  containerRef: RefObject<HTMLDivElement>;
+  cursorPositions: Record<string, { x: number; y: number; userName: string }>;
 }
 
-interface LiveCursorsProps {
-  containerRef: React.RefObject<HTMLDivElement>;
-}
-
-const LiveCursors: React.FC<LiveCursorsProps> = ({ containerRef }) => {
-  const [cursors, setCursors] = useState<Cursor[]>([
-    { id: "user1", x: 150, y: 120, color: "#3b82f6", name: "Alice" },
-    { id: "user2", x: 250, y: 220, color: "#10b981", name: "Bob" }
-  ]);
-
-  useEffect(() => {
-    // Set up listeners for cursor movements from other users
-    const handleCursorMove = (data: { userId: string; x: number; y: number; name: string }) => {
-      setCursors(prev => {
-        // Find if this user cursor already exists
-        const existingIndex = prev.findIndex(c => c.id === data.userId);
-        
-        if (existingIndex >= 0) {
-          // Update existing cursor
-          const updated = [...prev];
-          updated[existingIndex] = {
-            ...updated[existingIndex],
-            x: data.x,
-            y: data.y
-          };
-          return updated;
-        } else {
-          // Add new cursor with a random color
-          const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
-          const randomColor = colors[Math.floor(Math.random() * colors.length)];
-          
-          return [...prev, {
-            id: data.userId,
-            x: data.x,
-            y: data.y,
-            color: randomColor,
-            name: data.name
-          }];
-        }
-      });
-    };
-
-    socketService.on("cursor-move", handleCursorMove);
-    
-    // Handle users joining and leaving
-    socketService.on("user-joined", (data) => {
-      // User cursors are added when they move their mouse
-    });
-    
-    socketService.on("user-left", (data) => {
-      setCursors(prev => prev.filter(c => c.id !== data.userId));
-    });
-
-    // For demo purposes - animate cursors slightly
-    const interval = setInterval(() => {
-      setCursors(prev => 
-        prev.map(cursor => ({
-          ...cursor,
-          x: cursor.x + (Math.random() * 6 - 3),
-          y: cursor.y + (Math.random() * 6 - 3)
-        }))
-      );
-    }, 2000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
-
-  if (!containerRef.current) return null;
+const LiveCursors: React.FC<LiveCursorsProps> = ({ containerRef, cursorPositions }) => {
+  // Get initials from username
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   return (
-    <>
-      {cursors.map(cursor => (
-        <div 
-          key={cursor.id}
-          className="absolute z-10 pointer-events-none transition-all duration-100 ease-out"
+    <div className="absolute inset-0 pointer-events-none z-10">
+      {Object.entries(cursorPositions).map(([userId, position]) => (
+        <div
+          key={userId}
+          className="absolute transform -translate-x-1/2 -translate-y-1/2"
           style={{ 
-            transform: `translate(${cursor.x}px, ${cursor.y}px)`,
+            left: position.x, 
+            top: position.y,
+            transition: 'left 0.2s ease, top 0.2s ease'
           }}
         >
-          <svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path 
-              d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.00158691 17.2664L0 0L18.3192 17.263H9.99425L9.76272 17.2956L5.65376 12.3673Z" 
-              fill={cursor.color}
-            />
-          </svg>
-          
-          <div 
-            className="px-2 py-1 rounded-md text-xs text-white shadow-sm absolute whitespace-nowrap"
-            style={{ 
-              backgroundColor: cursor.color,
-              transform: "translate(8px, -20px)"
-            }}
-          >
-            {cursor.name}
+          <div className="flex flex-col items-center">
+            <div className="cursor-pointer">
+              <svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.76633 16.5016L0.131618 17.0658L0.2721 17.8794L5.79208 35.0264L5.95362 35.4846L6.43542 35.6328L12.0318 37.1053L12.7969 37.3212L13.1054 36.6062L16.3259 27.9889L20.0447 32.4121L20.2451 32.6383L20.5366 32.7432L25.1644 34.4127L25.5408 34.5345L25.8538 34.2459L29.5734 30.7876L30.3989 30.0137L29.9011 29.0941L17.9363 8.40831L17.4867 7.63373L16.632 7.81959L6.23799 10.333L5.44945 10.5047L5.34157 11.3071L5.65376 12.3673Z" 
+                  fill="#2563EB" stroke="#FFFFFF"/>
+              </svg>
+            </div>
+            <div className="select-none bg-primary text-white text-xs px-2 py-1 rounded-md shadow-sm mt-1">
+              <span className="whitespace-nowrap">{position.userName}</span>
+            </div>
           </div>
         </div>
       ))}
-    </>
+    </div>
   );
 };
 

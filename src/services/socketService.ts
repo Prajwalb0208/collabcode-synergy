@@ -86,6 +86,40 @@ class SocketService {
     }
   }
 
+  // Send cursor position update to other users
+  emitCursorPosition(x: number, y: number, userName?: string) {
+    if (!this.roomId || !this.userId) {
+      console.warn("Room ID or User ID not set, unable to emit cursor position");
+      return;
+    }
+    
+    this.emit("cursor-move", {
+      roomId: this.roomId,
+      userId: this.userId,
+      userName,
+      x,
+      y,
+      timestamp: new Date()
+    });
+  }
+
+  // Send code changes to other users
+  emitCodeChange(code: string, fileName: string, language: string) {
+    if (!this.roomId || !this.userId) {
+      console.warn("Room ID or User ID not set, unable to emit code change");
+      return;
+    }
+    
+    this.emit("code-change", {
+      roomId: this.roomId,
+      userId: this.userId,
+      code,
+      fileName,
+      language,
+      timestamp: new Date()
+    });
+  }
+
   // Request access to a room
   requestAccess(userId: string, userName?: string, userAvatar?: string) {
     if (!this.roomId) {
