@@ -14,6 +14,9 @@ interface CollaborationSidebarProps {
   isRoomOwner: boolean;
   currentFile: CodeFile;
   files?: CodeFile[];
+  accessRequests?: {userId: string, userName: string}[];
+  onApproveAccess?: (userId: string) => void;
+  onDenyAccess?: (userId: string) => void;
 }
 
 const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
@@ -23,7 +26,10 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
   roomId,
   isRoomOwner,
   currentFile,
-  files
+  files,
+  accessRequests = [],
+  onApproveAccess,
+  onDenyAccess
 }) => {
   return (
     <>
@@ -50,6 +56,9 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
                   isOwner={isRoomOwner} 
                   roomId={roomId}
                   files={files}
+                  accessRequests={accessRequests}
+                  onApproveAccess={onApproveAccess}
+                  onDenyAccess={onDenyAccess}
                 />
               ) : (
                 <AIAssistant currentFile={currentFile} />

@@ -70,12 +70,19 @@ export const executeJavaScript = (code: string): {
 /**
  * Creates an HTML preview from the given HTML code
  * @param html The HTML code to preview
- * @returns HTML document as a data URL
+ * @returns HTML document as a data URL or blob URL
  */
 export const createHtmlPreview = (html: string): string => {
-  // Create a data URL from the HTML content
-  const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
-  return dataUrl;
+  try {
+    // Create a blob from the HTML content
+    const blob = new Blob([html], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    return blobUrl;
+  } catch (error) {
+    console.error("Error creating HTML preview:", error);
+    // Fallback to data URL
+    return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  }
 };
 
 /**
@@ -89,9 +96,11 @@ export const executeCode = (code: string, language: string): string[] => {
   
   output.push(`> Running ${language} code...`);
   
-  switch (language) {
+  switch (language.toLowerCase()) {
     case "javascript":
+    case "js":
     case "typescript":
+    case "ts":
       try {
         const { result, logs, error } = executeJavaScript(code);
         
@@ -119,16 +128,12 @@ export const executeCode = (code: string, language: string): string[] => {
         // Generate HTML preview
         const previewUrl = createHtmlPreview(code);
         output.push("HTML execution prepared.");
-        output.push(`Preview available at: ${previewUrl}`);
+        output.push(`Preview URL generated.`);
         
-        // Open preview in a new tab/window if we're in a browser environment
+        // Open preview in a new tab/window
         if (typeof window !== 'undefined') {
-          const previewWindow = window.open(previewUrl, '_blank', 'width=800,height=600');
-          if (previewWindow) {
-            output.push("HTML preview opened in a new window.");
-          } else {
-            output.push("Warning: Pop-up blocker may have prevented opening the preview.");
-          }
+          window.open(previewUrl, '_blank', 'width=800,height=600');
+          output.push("HTML preview opened in a new window.");
         }
       } catch (error) {
         output.push(`Error creating HTML preview: ${error instanceof Error ? error.message : String(error)}`);
@@ -137,11 +142,35 @@ export const executeCode = (code: string, language: string): string[] => {
       
     case "css":
       output.push("CSS execution is available in the preview panel.");
+      // Create a mini-preview with the HTML and CSS
+      try {
+        const htmlTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>${code}</style>
+</head>
+<body>
+  <div class="preview-container">
+    <h1>CSS Preview</h1>
+    <p>This is a paragraph with some <a href="#">sample text</a> to demonstrate your CSS.</p>
+    <div class="sample-box">Sample Box</div>
+    <button class="sample-button">Sample Button</button>
+  </div>
+</body>
+</html>`;
+        
+        const previewUrl = createHtmlPreview(htmlTemplate);
+        window.open(previewUrl, '_blank', 'width=800,height=600');
+        output.push("CSS preview opened in a new window.");
+      } catch (error) {
+        output.push(`Error creating CSS preview: ${error instanceof Error ? error.message : String(error)}`);
+      }
       break;
       
     default:
-      output.push(`Execution for ${language} is not supported.`);
-      output.push("Only JavaScript/TypeScript and HTML execution is available.");
+      output.push(`Execution for ${language} is not directly supported.`);
+      output.push("Only JavaScript/TypeScript, HTML, and CSS execution is available.");
   }
   
   return output;
