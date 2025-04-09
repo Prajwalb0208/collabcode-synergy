@@ -11,6 +11,7 @@ import {
   getCurrentUser 
 } from "@/services/firebaseService";
 import { User as FirebaseUser } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 
 interface User {
   id: string;
@@ -37,6 +38,34 @@ export const useAuth = () => {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+};
+
+// Get error message from Firebase error code
+const getErrorMessage = (error: any): string => {
+  if (error instanceof FirebaseError) {
+    switch (error.code) {
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'Invalid email or password';
+      case 'auth/email-already-in-use':
+        return 'Email is already in use';
+      case 'auth/weak-password':
+        return 'Password is too weak';
+      case 'auth/invalid-email':
+        return 'Invalid email format';
+      case 'auth/popup-closed-by-user':
+        return 'Authentication popup was closed before completion';
+      case 'auth/cancelled-popup-request':
+        return 'Multiple popup requests were made - please try again';
+      case 'auth/popup-blocked':
+        return 'Authentication popup was blocked by the browser';
+      case 'auth/account-exists-with-different-credential':
+        return 'An account already exists with the same email but different sign-in credentials';
+      default:
+        return error.message || 'Authentication error';
+    }
+  }
+  return 'An unexpected error occurred';
 };
 
 // Convert Firebase user to our User type
@@ -105,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: "Invalid email or password.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
       return false;
@@ -130,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "An error occurred during registration.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
       return false;
@@ -162,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error(`${provider} login error:`, error);
       toast({
         title: "Login failed",
-        description: `An error occurred while signing in with ${provider}.`,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
       return false;
@@ -183,7 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Logout error:", error);
       toast({
         title: "Logout failed",
-        description: "An error occurred while logging out.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     }

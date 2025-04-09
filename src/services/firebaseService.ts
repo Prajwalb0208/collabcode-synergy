@@ -15,7 +15,7 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCKa0hwzNPpRWV-yih4NHSGg3Zy3q97jjI",
+  apiKey: "AIzaSyA2r_iBeMZvWv3xMeKrGLkH2GiMUJjmWRw",
   authDomain: "collab-code-platform.firebaseapp.com",
   projectId: "collab-code-platform",
   storageBucket: "collab-code-platform.appspot.com",
@@ -45,6 +45,9 @@ const getCurrentUser = (): Promise<FirebaseUser | null> => {
 // Sign in with Google
 const signInWithGoogle = async () => {
   try {
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error) {
