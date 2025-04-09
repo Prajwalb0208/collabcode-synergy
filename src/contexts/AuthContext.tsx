@@ -1,6 +1,16 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { 
+  auth, 
+  signInWithGoogle, 
+  signInWithGithub, 
+  signInWithEmail, 
+  registerWithEmail, 
+  signOutUser, 
+  getCurrentUser 
+} from "@/services/firebaseService";
+import { User as FirebaseUser } from "firebase/auth";
 
 interface User {
   id: string;
@@ -29,66 +39,73 @@ export const useAuth = () => {
   return context;
 };
 
+// Convert Firebase user to our User type
+const formatUser = (firebaseUser: FirebaseUser): User => {
+  return {
+    id: firebaseUser.uid,
+    name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || firebaseUser.uid,
+    email: firebaseUser.email || '',
+    avatar: firebaseUser.photoURL || undefined,
+    provider: firebaseUser.providerData[0]?.providerId || 'email'
+  };
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from localStorage on mount
+  // Check if user is logged in on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const checkAuthState = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        const firebaseUser = await getCurrentUser();
+        if (firebaseUser) {
+          const formattedUser = formatUser(firebaseUser);
+          setUser(formattedUser);
+        }
       } catch (error) {
-        console.error("Failed to parse stored user:", error);
+        console.error("Error checking auth state:", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    checkAuthState();
   }, []);
 
-  // Save user to localStorage when it changes
+  // Set up auth state listener
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("user");
-    }
-  }, [user]);
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      setIsLoading(true);
+      if (firebaseUser) {
+        const formattedUser = formatUser(firebaseUser);
+        setUser(formattedUser);
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // In a real app, this would be an API call
-      // Simulating API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simple validation (in a real app, this would be server-side)
-      if (email === "demo@example.com" && password === "password") {
-        const user = {
-          id: "user-1",
-          name: "Demo User",
-          email: "demo@example.com",
-          provider: "email"
-        };
-        setUser(user);
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${user.name}!`,
-        });
-        return true;
-      }
+      const firebaseUser = await signInWithEmail(email, password);
+      const formattedUser = formatUser(firebaseUser);
+      setUser(formattedUser);
       
       toast({
-        title: "Login failed",
-        description: "Invalid email or password.",
-        variant: "destructive",
+        title: "Login successful",
+        description: `Welcome back, ${formattedUser.name}!`,
       });
-      return false;
+      return true;
     } catch (error) {
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred.",
+        description: "Invalid email or password.",
         variant: "destructive",
       });
       return false;
@@ -100,18 +117,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      // In a real app, this would be an API call
-      // Simulating API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const firebaseUser = await registerWithEmail(email, password);
+      const formattedUser = formatUser(firebaseUser);
+      setUser(formattedUser);
       
-      const user = {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-        provider: "email"
-      };
-      
-      setUser(user);
       toast({
         title: "Registration successful",
         description: `Welcome, ${name}!`,
@@ -121,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred.",
+        description: "An error occurred during registration.",
         variant: "destructive",
       });
       return false;
@@ -133,34 +142,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithProvider = async (provider: "google" | "github") => {
     setIsLoading(true);
     try {
-      // In a real app, this would be an OAuth flow
-      // Simulating API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      let user;
+      let firebaseUser;
       
       if (provider === "google") {
-        user = {
-          id: `google-${Date.now()}`,
-          name: "Google User",
-          email: "google.user@example.com",
-          avatar: "https://lh3.googleusercontent.com/a/default-user=s120",
-          provider: "google"
-        };
+        firebaseUser = await signInWithGoogle();
       } else {
-        user = {
-          id: `github-${Date.now()}`,
-          name: "GitHub User",
-          email: "github.user@example.com",
-          avatar: "https://github.com/identicons/app/default.png",
-          provider: "github"
-        };
+        firebaseUser = await signInWithGithub();
       }
       
-      setUser(user);
+      const formattedUser = formatUser(firebaseUser);
+      setUser(formattedUser);
+      
       toast({
         title: "Login successful",
-        description: `Welcome, ${user.name}!`,
+        description: `Welcome, ${formattedUser.name}!`,
       });
       return true;
     } catch (error) {
@@ -176,12 +171,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
-    });
+  const logout = async () => {
+    try {
+      await signOutUser();
+      setUser(null);
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

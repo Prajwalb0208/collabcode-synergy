@@ -1,240 +1,137 @@
 
-import { io, Socket } from "socket.io-client";
-import { toast } from "@/components/ui/use-toast";
-import { CodeFile } from "@/pages/Room/types";
+import io, { Socket } from "socket.io-client";
 
+// Socket service for real-time communication
 class SocketService {
   private socket: Socket | null = null;
   private roomId: string | null = null;
   private userId: string | null = null;
-  private isConnected: boolean = false;
-  private eventHandlers: Record<string, Function[]> = {};
-  private connectedUsers: { userId: string; name: string }[] = [];
 
-  constructor() {
-    // Initialize a real socket connection
-    try {
-      this.socket = io(import.meta.env.VITE_SOCKET_URL || "https://socket-server-dev.lovable.app");
-      
-      this.socket.on("connect", () => {
-        this.isConnected = true;
-        this.triggerEvent("connect", {});
-        console.log("Connected to socket server");
-      });
-      
-      this.socket.on("disconnect", () => {
-        this.isConnected = false;
-        this.triggerEvent("disconnect", {});
-        console.log("Disconnected from socket server");
-      });
-      
-      this.socket.on("user-joined", (data) => {
-        this.connectedUsers.push(data);
-        this.triggerEvent("user-joined", data);
-      });
-      
-      this.socket.on("user-left", (data) => {
-        this.connectedUsers = this.connectedUsers.filter(u => u.userId !== data.userId);
-        this.triggerEvent("user-left", data);
-      });
-      
-      this.socket.on("code-change", (data) => {
-        this.triggerEvent("code-change", data);
-      });
-      
-      this.socket.on("cursor-move", (data) => {
-        this.triggerEvent("cursor-move", data);
-      });
-      
-      this.socket.on("file-update", (data) => {
-        this.triggerEvent("file-update", data);
-      });
-      
-      this.socket.on("file-selected", (data) => {
-        this.triggerEvent("file-selected", data);
-      });
-      
-      this.socket.on("folder-update", (data) => {
-        this.triggerEvent("folder-update", data);
-      });
-      
-      this.socket.on("access-request", (data) => {
-        this.triggerEvent("access-request", data);
-      });
-      
-      this.socket.on("access-response", (data) => {
-        this.triggerEvent("access-response", data);
-      });
-    } catch (error) {
-      console.error("Socket initialization error:", error);
-      this.fallbackToMockBehavior();
+  // Connect to the socket server with room and user info
+  connect(roomId: string, userId: string, userName?: string, userAvatar?: string) {
+    if (this.socket) {
+      this.disconnect();
     }
-  }
 
-  private fallbackToMockBehavior() {
-    console.warn("Falling back to mock socket behavior");
-    this.eventHandlers = {
-      "code-change": [],
-      "cursor-move": [],
-      "user-joined": [],
-      "user-left": [],
-      "file-update": [],
-      "file-selected": [],
-      "folder-update": [],
-      "access-request": [],
-      "access-response": [],
-      "connect": [],
-      "disconnect": [],
-      "error": []
-    };
-    
-    // Simulate connection
-    setTimeout(() => {
-      this.isConnected = true;
-      this.triggerEvent("connect", {});
-    }, 1000);
-  }
+    // In a real app, this would connect to your actual socket server
+    // Using a mock implementation that simulates socket events
+    this.socket = io("https://api.collabcode.app", {
+      query: {
+        roomId,
+        userId,
+        userName,
+        userAvatar
+      },
+      transports: ["websocket"],
+      autoConnect: true
+    });
 
-  // Connect to a specific room
-  connect(roomId: string, userId: string) {
     this.roomId = roomId;
     this.userId = userId;
-    
-    if (this.socket && this.isConnected) {
-      this.socket.emit("join-room", { roomId, userId });
-      
-      toast({
-        title: "Connected to session",
-        description: `You've joined collaboration room ${roomId}`,
-      });
-    }
-    
-    return this;
-  }
-  
-  // Disconnect from the current room
-  disconnect() {
-    if (this.socket && this.isConnected && this.roomId && this.userId) {
-      this.socket.emit("leave-room", { roomId: this.roomId, userId: this.userId });
-    }
-    
-    this.roomId = null;
-    this.userId = null;
-    
-    toast({
-      title: "Disconnected from session",
-      description: "You've left the collaboration room",
+
+    this.socket.on("connect", () => {
+      console.log("Socket connected");
+      // Announce user joined
+      this.emit("user-joined", { roomId, userId, userName, userAvatar });
     });
-    
-    return this;
+
+    this.socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    this.socket.on("error", (error) => {
+      console.error("Socket error:", error);
+    });
+
+    return this.socket;
   }
 
-  // Generic emit method for any event
-  emit(event: string, data: any) {
-    if (!this.isConnected || !this.roomId) return;
-    
+  // Disconnect from the socket server
+  disconnect() {
     if (this.socket) {
-      this.socket.emit(event, { ...data, roomId: this.roomId });
-    } else {
-      // Mock implementation for testing
-      setTimeout(() => {
-        this.triggerEvent(event, data);
-      }, 100);
+      // Announce user left
+      if (this.roomId && this.userId) {
+        this.emit("user-left", { roomId: this.roomId, userId: this.userId });
+      }
+      
+      this.socket.disconnect();
+      this.socket = null;
+      this.roomId = null;
+      this.userId = null;
     }
   }
 
-  // Emit code changes to other users
-  emitCodeChange(code: string, file: string, language: string) {
-    if (!this.isConnected || !this.roomId) return;
-    
+  // Send a message through the socket
+  emit(eventName: string, data: any) {
     if (this.socket) {
-      this.socket.emit("code-change", { 
-        code, 
-        file, 
-        language, 
-        roomId: this.roomId, 
-        timestamp: new Date().toISOString() 
-      });
+      this.socket.emit(eventName, data);
     } else {
-      // Mock implementation
-      setTimeout(() => {
-        this.triggerEvent("code-change", { code, file, language });
-      }, 100);
+      console.warn("Socket not connected, unable to emit event:", eventName);
     }
   }
 
-  // Emit cursor position to other users
-  emitCursorPosition(x: number, y: number) {
-    if (!this.isConnected || !this.roomId || !this.userId) return;
-    
+  // Listen for socket events
+  on(eventName: string, callback: (data: any) => void) {
     if (this.socket) {
-      this.socket.emit("cursor-move", { 
-        x, 
-        y, 
-        userId: this.userId, 
-        roomId: this.roomId 
-      });
+      this.socket.on(eventName, callback);
+    } else {
+      console.warn("Socket not connected, unable to listen for event:", eventName);
+    }
+  }
+
+  // Remove event listener
+  off(eventName: string, callback?: (data: any) => void) {
+    if (this.socket) {
+      this.socket.off(eventName, callback);
     }
   }
 
   // Request access to a room
-  requestAccess(userId: string, userName: string) {
-    if (!this.isConnected || !this.roomId) return;
+  requestAccess(userId: string, userName?: string, userAvatar?: string) {
+    if (!this.roomId) {
+      console.warn("Room ID not set, unable to request access");
+      return;
+    }
     
-    if (this.socket) {
-      this.socket.emit("access-request", { 
-        userId, 
-        userName,
-        roomId: this.roomId 
-      });
-    }
+    this.emit("access-request", {
+      roomId: this.roomId,
+      userId,
+      userName,
+      userAvatar,
+      timestamp: new Date()
+    });
   }
 
-  // Respond to access request
-  respondToAccessRequest(requesterId: string, approved: boolean) {
-    if (!this.isConnected || !this.roomId || !this.userId) return;
+  // Respond to an access request
+  respondToAccessRequest(userId: string, approved: boolean) {
+    if (!this.roomId) {
+      console.warn("Room ID not set, unable to respond to access request");
+      return;
+    }
     
-    if (this.socket) {
-      this.socket.emit("access-response", { 
-        requesterId, 
-        approved, 
-        roomId: this.roomId,
-        responderId: this.userId
-      });
-    }
+    this.emit("access-response", {
+      roomId: this.roomId,
+      userId,
+      approved,
+      timestamp: new Date()
+    });
   }
 
-  // Register event handlers
-  on(event: string, callback: Function) {
-    if (!this.eventHandlers[event]) {
-      this.eventHandlers[event] = [];
-    }
-    this.eventHandlers[event].push(callback);
-    return this;
+  // Check if socket is connected
+  isConnected() {
+    return this.socket && this.socket.connected;
   }
 
-  // Helper function to trigger events for the mock implementation
-  private triggerEvent(event: string, data: any) {
-    if (this.eventHandlers[event]) {
-      this.eventHandlers[event].forEach(callback => callback(data));
-    }
-  }
-  
-  // Get connected users
-  getConnectedUsers() {
-    return this.connectedUsers;
-  }
-  
-  // Check if connected to a room
-  isConnectedToRoom() {
-    return this.isConnected && this.roomId !== null;
-  }
-  
   // Get current room ID
   getCurrentRoomId() {
     return this.roomId;
   }
+
+  // Get current user ID
+  getCurrentUserId() {
+    return this.userId;
+  }
 }
 
-// Export a singleton instance
+// Create a singleton instance
 export const socketService = new SocketService();
