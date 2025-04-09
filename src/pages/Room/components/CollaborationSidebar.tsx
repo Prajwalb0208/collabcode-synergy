@@ -5,6 +5,7 @@ import CollaborationPanel from "@/components/CollaborationPanel";
 import VideoCall from "@/components/VideoCall";
 import AIAssistant from "@/components/AIAssistant";
 import { VisiblePanels, CodeFile } from "../types";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CollaborationSidebarProps {
   visiblePanels: VisiblePanels;
@@ -31,6 +32,13 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
   onApproveAccess,
   onDenyAccess
 }) => {
+  const { user } = useAuth();
+  
+  // Don't render if user is not authenticated
+  if (!user) {
+    return null;
+  }
+  
   return (
     <>
       <ResizableHandle withHandle />

@@ -4,7 +4,15 @@ import { useAuth } from "./AuthContext";
 import { Github } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
-interface Room {
+export interface CodeFile {
+  name: string;
+  language: string;
+  content: string;
+  lastEdited?: Date;
+  editedBy?: string;
+}
+
+export interface Room {
   id: string;
   name: string;
   description?: string;
@@ -13,12 +21,15 @@ interface Room {
   participants: string[];
   pendingRequests: string[];
   gitHubRepo?: string;
+  files?: CodeFile[];
+  createdAt: Date;
 }
 
 interface RoomHistoryContextType {
   recentRooms: Room[];
   addRoom: (roomId: string) => void;
   updateRoomDetails: (roomId: string, details: Partial<Omit<Room, 'id'>>) => void;
+  updateRoomFiles: (roomId: string, files: CodeFile[]) => void;
   isRoomOwner: (roomId: string) => boolean;
   isParticipant: (roomId: string) => boolean;
   isPendingApproval: (roomId: string) => boolean;
@@ -26,6 +37,7 @@ interface RoomHistoryContextType {
   approveAccess: (roomId: string, userId: string) => void;
   denyAccess: (roomId: string, userId: string) => void;
   connectGithubRepo: (roomId: string, repoUrl: string) => void;
+  getRoom: (roomId: string) => Room | undefined;
 }
 
 const RoomHistoryContext = createContext<RoomHistoryContextType | undefined>(undefined);
@@ -54,13 +66,16 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return parsed.map((room: any) => ({
           ...room,
           lastVisited: new Date(room.lastVisited),
+          createdAt: room.createdAt ? new Date(room.createdAt) : new Date(),
           owner: room.owner || userId,
           participants: room.participants || [userId],
           pendingRequests: room.pendingRequests || [],
           description: room.description || "",
-          gitHubRepo: room.gitHubRepo || ""
+          gitHubRepo: room.gitHubRepo || "",
+          files: room.files || []
         }));
       } catch (e) {
+        console.error("Error parsing room history:", e);
         return [];
       }
     }
@@ -89,17 +104,19 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         };
         return newRooms;
       } else {
-        // Add new room, limit to 10 recent rooms
-        const newRoom = {
+        // Add new room, limit to 20 recent rooms
+        const newRoom: Room = {
           id: roomId,
-          name: `Room ${roomId.substring(0, 4)}...`,
+          name: `Session ${roomId.substring(0, 4)}...`,
           description: "Collaborative coding session",
           lastVisited: new Date(),
+          createdAt: new Date(),
           owner: userId,
           participants: [userId],
-          pendingRequests: []
+          pendingRequests: [],
+          files: []
         };
-        return [newRoom, ...prev].slice(0, 10);
+        return [newRoom, ...prev].slice(0, 20);
       }
     });
   };
@@ -110,7 +127,23 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (room.id === roomId) {
           return {
             ...room,
-            ...details
+            ...details,
+            lastVisited: new Date() // Always update lastVisited when room is modified
+          };
+        }
+        return room;
+      });
+    });
+  };
+  
+  const updateRoomFiles = (roomId: string, files: CodeFile[]) => {
+    setRecentRooms(prev => {
+      return prev.map(room => {
+        if (room.id === roomId) {
+          return {
+            ...room,
+            files: files,
+            lastVisited: new Date()
           };
         }
         return room;
@@ -185,6 +218,10 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
     });
   };
+  
+  const getRoom = (roomId: string) => {
+    return recentRooms.find(room => room.id === roomId);
+  };
 
   return (
     <RoomHistoryContext.Provider
@@ -192,13 +229,15 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         recentRooms,
         addRoom,
         updateRoomDetails,
+        updateRoomFiles,
         isRoomOwner,
         isParticipant,
         isPendingApproval,
         requestAccess,
         approveAccess,
         denyAccess,
-        connectGithubRepo
+        connectGithubRepo,
+        getRoom
       }}
     >
       {children}

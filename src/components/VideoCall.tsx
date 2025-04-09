@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,19 +12,15 @@ interface VideoCallProps {
 }
 
 const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId }) => {
-  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [isCameraOn, setIsCameraOn] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [collaborators, setCollaborators] = useState<{id: string, name: string, color: string, cameraOn: boolean}[]>([]);
   
-  // Initialize webcam on component mount
+  // Don't initialize webcam on component mount to save resources
   useEffect(() => {
-    if (isCameraOn) {
-      startWebcam();
-    }
-    
     // Track collaborators
     socketService.on("user-joined", (data) => {
       setCollaborators(prev => {
@@ -34,7 +29,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
         }
         return [...prev, {
           id: data.userId,
-          name: data.name,
+          name: data.name || `User-${data.userId.slice(0, 4)}`,
           color: getRandomColor(),
           cameraOn: false
         }];
@@ -111,27 +106,81 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
   };
 
   const toggleMic = async () => {
-    setIsMicOn(!isMicOn);
-    
-    // If we have an active stream, toggle the audio tracks
-    if (stream) {
-      stream.getAudioTracks().forEach(track => {
-        track.enabled = !isMicOn;
+    if (isMicOn) {
+      // Turn off microphone
+      if (stream) {
+        stream.getAudioTracks().forEach(track => {
+          track.stop();
+        });
+        
+        // If camera is still on, restart stream without audio
+        if (isCameraOn) {
+          try {
+            const videoOnlyStream = await navigator.mediaDevices.getUserMedia({ 
+              video: true, 
+              audio: false 
+            });
+            
+            if (videoRef.current) {
+              videoRef.current.srcObject = videoOnlyStream;
+            }
+            setStream(videoOnlyStream);
+          } catch (error) {
+            console.error("Error restarting camera:", error);
+          }
+        }
+      }
+      
+      setIsMicOn(false);
+      toast({
+        title: "Microphone turned off",
+        duration: 1500
       });
-    } else if (!isMicOn && !stream) {
-      // If turning mic on and no stream exists yet
+    } else {
+      // Turn on microphone
       try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        setStream(audioStream);
+        let newStream;
+        
+        if (isCameraOn && stream) {
+          // If camera is on, add audio to existing stream
+          newStream = await navigator.mediaDevices.getUserMedia({ 
+            video: true, 
+            audio: true 
+          });
+        } else {
+          // Just audio if camera is off
+          newStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true 
+          });
+        }
+        
+        if (videoRef.current && isCameraOn) {
+          videoRef.current.srcObject = newStream;
+        }
+        
+        setStream(prevStream => {
+          // Stop old stream tracks
+          if (prevStream) {
+            prevStream.getTracks().forEach(track => track.stop());
+          }
+          return newStream;
+        });
+        
+        setIsMicOn(true);
+        toast({
+          title: "Microphone turned on",
+          duration: 1500
+        });
       } catch (error) {
         console.error("Error accessing microphone:", error);
+        toast({
+          title: "Microphone access denied",
+          description: "Please check your browser permissions",
+          variant: "destructive",
+          duration: 3000
+        });
       }
     }
-    
-    toast({
-      title: isMicOn ? "Microphone muted" : "Microphone unmuted",
-      duration: 1500
-    });
   };
 
   const toggleScreenShare = async () => {

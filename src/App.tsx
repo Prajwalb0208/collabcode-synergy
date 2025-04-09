@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RoomHistoryProvider } from "@/contexts/RoomHistoryContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Room from "./pages/Room";
 import Rooms from "./pages/Rooms";
@@ -26,10 +27,25 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/room/:roomId" element={<Room />} />
-                <Route path="/new-room" element={<Room />} />
-                <Route path="/rooms" element={<Rooms />} />
                 <Route path="/auth" element={<Auth />} />
+                
+                {/* Protected routes - require authentication */}
+                <Route path="/room/:roomId" element={
+                  <ProtectedRoute>
+                    <Room />
+                  </ProtectedRoute>
+                } />
+                <Route path="/new-room" element={
+                  <ProtectedRoute>
+                    <Room />
+                  </ProtectedRoute>
+                } />
+                <Route path="/rooms" element={
+                  <ProtectedRoute>
+                    <Rooms />
+                  </ProtectedRoute>
+                } />
+                
                 <Route path="/docs" element={<NotFound />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
