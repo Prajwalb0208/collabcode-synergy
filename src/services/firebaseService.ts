@@ -15,7 +15,8 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyA2r_iBeMZvWv3xMeKrGLkH2GiMUJjmWRw",
+  // Please replace this with your actual Firebase API key
+  apiKey: process.env.FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY",
   authDomain: "collab-code-platform.firebaseapp.com",
   projectId: "collab-code-platform",
   storageBucket: "collab-code-platform.appspot.com",
