@@ -14,9 +14,11 @@ import {
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
+// Vite uses import.meta.env instead of process.env
 const firebaseConfig = {
-  // Please replace this with your actual Firebase API key
-  apiKey: process.env.FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY",
+  // Use a temporary placeholder API key for development
+  // Replace this with a valid Firebase API key for your project
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForDevelopmentPurposesOnly",
   authDomain: "collab-code-platform.firebaseapp.com",
   projectId: "collab-code-platform",
   storageBucket: "collab-code-platform.appspot.com",
