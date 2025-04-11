@@ -23,6 +23,6 @@ export default defineConfig(({ mode }) => ({
   // Define environment variables for client-side use
   define: {
     // Vite's environment variable handling
-    'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY)
+    'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY || "AIzaSyDD1aCj-0Y_SskrXRx6hcrD9yaqRODJthg")
   }
 }));

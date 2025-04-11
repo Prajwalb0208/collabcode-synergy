@@ -14,16 +14,13 @@ import {
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
-// Vite uses import.meta.env instead of process.env
 const firebaseConfig = {
-  // Use a temporary placeholder API key for development
-  // Replace this with a valid Firebase API key for your project
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForDevelopmentPurposesOnly",
-  authDomain: "collab-code-platform.firebaseapp.com",
-  projectId: "collab-code-platform",
-  storageBucket: "collab-code-platform.appspot.com",
-  messagingSenderId: "951633825792",
-  appId: "1:951633825792:web:a3e5d1d1e1c3e5f0a3b8c9"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDD1aCj-0Y_SskrXRx6hcrD9yaqRODJthg",
+  authDomain: "chat-app-gs-38220.firebaseapp.com",
+  projectId: "chat-app-gs-38220",
+  storageBucket: "chat-app-gs-38220.appspot.com",
+  messagingSenderId: "660384285364",
+  appId: "1:660384285364:web:0344073dc1af1ed24c8de1"
 };
 
 // Initialize Firebase
