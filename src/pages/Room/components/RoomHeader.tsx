@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Play, Download, Save, FileText, FilePlus, Share, Edit, Check } from "lucide-react";
+import { Play, Download, Save, FileText, FilePlus, Share, Edit, Check, Copy } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ interface RoomHeaderProps {
   sessionName?: string;
   onUpdateSessionName?: (name: string) => void;
   isOwner?: boolean;
+  onCopySessionCode?: () => void;
 }
 
 const RoomHeader: React.FC<RoomHeaderProps> = ({
@@ -24,7 +25,8 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
   onCreateFile,
   sessionName = "Collaborative Session",
   onUpdateSessionName,
-  isOwner = false
+  isOwner = false,
+  onCopySessionCode
 }) => {
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
@@ -79,6 +81,18 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
     }
   };
 
+  const handleCopySessionCode = () => {
+    if (onCopySessionCode) {
+      onCopySessionCode();
+    } else if (roomId) {
+      navigator.clipboard.writeText(roomId);
+      toast({
+        title: "Session code copied!",
+        description: "Share this code with collaborators to join this session."
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-4 mb-4">
       <div className="flex items-center justify-between">
@@ -113,16 +127,17 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
           )}
         </div>
         
-        <div className="flex items-center gap-1 border border-border rounded-md px-3 py-1.5 bg-muted/30">
+        <div className="flex items-center gap-2 border border-border rounded-md px-3 py-1.5 bg-muted/30">
           <span className="text-sm font-medium">Session ID:</span>
           <code className="text-sm font-mono text-primary">{roomId || "Creating..."}</code>
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={handleShareRoom} 
+            onClick={handleCopySessionCode} 
             className="h-6 w-6 ml-1"
+            title="Copy session code"
           >
-            <Share className="h-3.5 w-3.5" />
+            <Copy className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, MessageCircle } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, MessageCircle, Copy } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { socketService } from "@/services/socketService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +30,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const { user } = useAuth();
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   
   // Initialize video call setup
   useEffect(() => {
@@ -106,6 +107,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
   
   const startWebcam = async () => {
     try {
+      setPermissionError(null);
       // Request camera permission only when button is clicked
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: true, 
@@ -137,6 +139,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
     } catch (error) {
       console.error("Error accessing webcam:", error);
       setIsCameraOn(false);
+      setPermissionError("Camera access denied. Please check your browser permissions and try again.");
       
       toast({
         title: "Camera access denied",
@@ -183,149 +186,163 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
   };
 
   const toggleMic = async () => {
-    if (isMicOn) {
-      // Turn off microphone
-      if (stream) {
-        stream.getAudioTracks().forEach(track => {
-          track.stop();
-        });
-        
-        // If camera is still on, restart stream without audio
-        if (isCameraOn) {
-          try {
-            const videoOnlyStream = await navigator.mediaDevices.getUserMedia({ 
-              video: true, 
-              audio: false 
-            });
-            
-            if (videoRef.current) {
-              videoRef.current.srcObject = videoOnlyStream;
+    try {
+      setPermissionError(null);
+      if (isMicOn) {
+        // Turn off microphone
+        if (stream) {
+          stream.getAudioTracks().forEach(track => {
+            track.stop();
+          });
+          
+          // If camera is still on, restart stream without audio
+          if (isCameraOn) {
+            try {
+              const videoOnlyStream = await navigator.mediaDevices.getUserMedia({ 
+                video: true, 
+                audio: false 
+              });
+              
+              if (videoRef.current) {
+                videoRef.current.srcObject = videoOnlyStream;
+              }
+              setStream(videoOnlyStream);
+            } catch (error) {
+              console.error("Error restarting camera:", error);
             }
-            setStream(videoOnlyStream);
-          } catch (error) {
-            console.error("Error restarting camera:", error);
           }
         }
-      }
-      
-      setIsMicOn(false);
-      
-      // Notify other users
-      if (roomId) {
-        socketService.emit("media-state-change", { 
-          roomId, 
-          userId: user?.id, 
-          userName: user?.name,
-          cameraOn: isCameraOn, 
-          micOn: false 
-        });
-      }
-      
-      toast({
-        title: "Microphone turned off",
-        duration: 1500
-      });
-    } else {
-      // Turn on microphone
-      try {
-        let newStream;
         
-        if (isCameraOn && stream) {
-          // If camera is on, add audio to existing stream
-          newStream = await navigator.mediaDevices.getUserMedia({ 
-            video: true, 
-            audio: true 
-          });
-        } else {
-          // Just audio if camera is off
-          newStream = await navigator.mediaDevices.getUserMedia({ 
-            audio: true 
-          });
-        }
-        
-        if (videoRef.current && isCameraOn) {
-          videoRef.current.srcObject = newStream;
-        }
-        
-        setStream(prevStream => {
-          // Stop old stream tracks
-          if (prevStream) {
-            prevStream.getTracks().forEach(track => track.stop());
-          }
-          return newStream;
-        });
-        
-        setIsMicOn(true);
+        setIsMicOn(false);
         
         // Notify other users
         if (roomId) {
           socketService.emit("media-state-change", { 
             roomId, 
-            userId: user?.id,
+            userId: user?.id, 
             userName: user?.name,
             cameraOn: isCameraOn, 
-            micOn: true 
+            micOn: false 
           });
         }
         
         toast({
-          title: "Microphone turned on",
+          title: "Microphone turned off",
           duration: 1500
         });
-      } catch (error) {
-        console.error("Error accessing microphone:", error);
-        toast({
-          title: "Microphone access denied",
-          description: "Please check your browser permissions",
-          variant: "destructive",
-          duration: 3000
-        });
+      } else {
+        // Turn on microphone
+        try {
+          let newStream;
+          
+          if (isCameraOn && stream) {
+            // If camera is on, add audio to existing stream
+            newStream = await navigator.mediaDevices.getUserMedia({ 
+              video: true, 
+              audio: true 
+            });
+          } else {
+            // Just audio if camera is off
+            newStream = await navigator.mediaDevices.getUserMedia({ 
+              audio: true 
+            });
+          }
+          
+          if (videoRef.current && isCameraOn) {
+            videoRef.current.srcObject = newStream;
+          }
+          
+          setStream(prevStream => {
+            // Stop old stream tracks
+            if (prevStream) {
+              prevStream.getTracks().forEach(track => track.stop());
+            }
+            return newStream;
+          });
+          
+          setIsMicOn(true);
+          
+          // Notify other users
+          if (roomId) {
+            socketService.emit("media-state-change", { 
+              roomId, 
+              userId: user?.id,
+              userName: user?.name,
+              cameraOn: isCameraOn, 
+              micOn: true 
+            });
+          }
+          
+          toast({
+            title: "Microphone turned on",
+            duration: 1500
+          });
+        } catch (error) {
+          console.error("Error accessing microphone:", error);
+          setPermissionError("Microphone access denied. Please check your browser permissions and try again.");
+          toast({
+            title: "Microphone access denied",
+            description: "Please check your browser permissions",
+            variant: "destructive",
+            duration: 3000
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error toggling microphone:", error);
+      setPermissionError("Error toggling microphone. Please check your browser permissions and try again.");
     }
   };
 
   const toggleScreenShare = async () => {
-    if (isScreenSharing) {
-      stopWebcam();
-      if (isCameraOn) {
-        await startWebcam();
-      }
-      setIsScreenSharing(false);
-    } else {
-      try {
-        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        
-        if (stream) {
-          stopWebcam();
+    try {
+      setPermissionError(null);
+      if (isScreenSharing) {
+        stopWebcam();
+        if (isCameraOn) {
+          await startWebcam();
         }
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = displayStream;
-        }
-        
-        setStream(displayStream);
-        setIsScreenSharing(true);
-        
-        // Automatically stop screen sharing when the user ends it
-        displayStream.getVideoTracks()[0].onended = () => {
-          setIsScreenSharing(false);
-          if (isCameraOn) {
-            startWebcam();
+        setIsScreenSharing(false);
+      } else {
+        try {
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+          
+          if (stream) {
+            stopWebcam();
           }
-        };
-        
-        toast({
-          title: "Screen sharing started",
-          duration: 1500
-        });
-      } catch (error) {
-        console.error("Error sharing screen:", error);
-        toast({
-          title: "Screen sharing failed",
-          description: "Could not access your screen",
-          variant: "destructive"
-        });
+          
+          if (videoRef.current) {
+            videoRef.current.srcObject = displayStream;
+          }
+          
+          setStream(displayStream);
+          setIsScreenSharing(true);
+          
+          // Automatically stop screen sharing when the user ends it
+          displayStream.getVideoTracks()[0].onended = () => {
+            setIsScreenSharing(false);
+            if (isCameraOn) {
+              startWebcam();
+            }
+          };
+          
+          toast({
+            title: "Screen sharing started",
+            duration: 1500
+          });
+        } catch (error) {
+          console.error("Error sharing screen:", error);
+          setPermissionError("Screen sharing access denied. Please check your browser permissions and try again.");
+          toast({
+            title: "Screen sharing failed",
+            description: "Could not access your screen",
+            variant: "destructive"
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error toggling screen share:", error);
+      setPermissionError("Error sharing screen. Please check your browser permissions and try again.");
     }
   };
 
@@ -340,22 +357,52 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
     });
   };
 
+  const copyRoomId = () => {
+    if (roomId) {
+      navigator.clipboard.writeText(roomId);
+      toast({
+        title: "Session code copied",
+        description: "Share this code with others to join your session",
+        duration: 2000
+      });
+    }
+  };
+
   // Define max allowed participants
   const MAX_PARTICIPANTS = 10;
   const showParticipantsWarning = remoteUsers.length >= MAX_PARTICIPANTS - 1;
 
   return (
     <div className="flex flex-col h-full">
+      {permissionError && (
+        <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-2 text-sm">
+          {permissionError}
+        </div>
+      )}
+      
       {showParticipantsWarning && (
         <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-4 py-2 text-sm">
           Maximum participants reached ({MAX_PARTICIPANTS} users)
         </div>
       )}
       
+      {roomId && (
+        <div className="bg-primary/10 p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground">Session Code</div>
+            <div className="font-mono font-medium">{roomId}</div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={copyRoomId}>
+            <Copy className="h-4 w-4 mr-1" />
+            Copy
+          </Button>
+        </div>
+      )}
+      
       <div className="flex-1 p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Current user's video */}
         <div className="aspect-video bg-muted rounded-lg overflow-hidden relative flex items-center justify-center">
-          {isCameraOn ? (
+          {isCameraOn || isScreenSharing ? (
             <video 
               ref={videoRef}
               autoPlay 
@@ -372,7 +419,9 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
                 </AvatarFallback>
               </Avatar>
               <span className="text-sm font-medium">{user?.name || "You"}</span>
-              <span className="text-xs text-muted-foreground mt-1">Camera off</span>
+              <span className="text-xs text-muted-foreground mt-1">
+                {isScreenSharing ? "Screen sharing" : "Camera off"}
+              </span>
             </div>
           )}
           <div className="absolute bottom-2 left-2 bg-background/70 backdrop-blur-sm rounded px-2 py-1 text-xs font-medium">
@@ -416,7 +465,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
           <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center">
             <div className="text-center text-muted-foreground">
               <p>Waiting for others to join</p>
-              <p className="text-xs mt-2">Share the session ID to invite people</p>
+              <p className="text-xs mt-2">Share the session code to invite people</p>
             </div>
           </div>
         )}

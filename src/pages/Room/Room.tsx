@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -16,7 +15,7 @@ import { CodeFile, VisiblePanels } from "./types";
 import { socketService } from "@/services/socketService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, CopyIcon } from "lucide-react";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -70,13 +69,11 @@ const Room = () => {
   const [currentRequest, setCurrentRequest] = useState<{userId: string, userName: string} | null>(null);
   const [sessionName, setSessionName] = useState<string>("Collaborative Session");
 
-  // Generate a new room ID if one isn't provided
   useEffect(() => {
     if (!roomId) {
       const newRoomId = generateRoomId();
       navigate(`/room/${newRoomId}`, { replace: true });
     } else {
-      // Set the document title with the room ID
       document.title = `Room: ${roomId} | CollabCode`;
     }
   }, [roomId, navigate]);
@@ -89,10 +86,8 @@ const Room = () => {
     if (roomId && user) {
       addRoom(roomId);
       
-      // Connect to the socket room
       socketService.connect(roomId, user.id);
       
-      // Listen for file updates from other users
       socketService.on("file-update", (data) => {
         if (data.files) {
           setFiles(data.files);
@@ -103,7 +98,6 @@ const Room = () => {
         }
       });
       
-      // Listen for file selection from other users
       socketService.on("file-selected", (data) => {
         const selectedFile = files.find(f => f.name === data.fileName);
         if (selectedFile) {
@@ -112,14 +106,12 @@ const Room = () => {
         }
       });
       
-      // Listen for folder updates
       socketService.on("folder-update", (data) => {
         if (data.folders) {
           setFolders(data.folders);
         }
       });
       
-      // Listen for access requests
       socketService.on("access-request", (data) => {
         if (roomId && isRoomOwner(roomId)) {
           setAccessRequests(prev => {
@@ -129,7 +121,6 @@ const Room = () => {
             return [...prev, { userId: data.userId, userName: data.userName || data.userId }];
           });
           
-          // Show the access request dialog
           setCurrentRequest({ userId: data.userId, userName: data.userName || data.userId });
           setShowAccessDialog(true);
           
@@ -140,7 +131,6 @@ const Room = () => {
         }
       });
       
-      // Listen for access responses
       socketService.on("access-response", (data) => {
         if (data.approved) {
           toast({
@@ -176,7 +166,6 @@ const Room = () => {
     
     setFiles(updatedFiles);
     
-    // Emit file update to other users
     if (roomId) {
       socketService.emit("file-update", { files: updatedFiles, roomId });
     }
@@ -214,10 +203,8 @@ const Room = () => {
       approveAccess(roomId, userId);
       socketService.respondToAccessRequest(userId, true);
       
-      // Remove the request from the list
       setAccessRequests(prev => prev.filter(req => req.userId !== userId));
       
-      // Close the dialog if it's the current request
       if (currentRequest && currentRequest.userId === userId) {
         setCurrentRequest(null);
         setShowAccessDialog(false);
@@ -230,10 +217,8 @@ const Room = () => {
       denyAccess(roomId, userId);
       socketService.respondToAccessRequest(userId, false);
       
-      // Remove the request from the list
       setAccessRequests(prev => prev.filter(req => req.userId !== userId));
       
-      // Close the dialog if it's the current request
       if (currentRequest && currentRequest.userId === userId) {
         setCurrentRequest(null);
         setShowAccessDialog(false);
@@ -256,15 +241,12 @@ const Room = () => {
     setCurrentFile(file);
     setActiveTab(file.name);
     
-    // Emit file selection to other users
     if (roomId) {
       socketService.emit("file-selected", { fileName: file.name, roomId });
     }
   };
 
-  // Create a new file
   const handleCreateFile = (fileName: string, language: string, content: string = "") => {
-    // Check if file already exists
     if (files.some(file => file.name === fileName)) {
       toast({
         title: "Error",
@@ -287,7 +269,6 @@ const Room = () => {
     setCurrentFile(newFile);
     setActiveTab(fileName);
     
-    // Emit file update to other users
     if (roomId) {
       socketService.emit("file-update", { files: updatedFiles, roomId });
     }
@@ -298,9 +279,7 @@ const Room = () => {
     });
   };
   
-  // Create a new folder
   const handleCreateFolder = (folderName: string) => {
-    // Check if folder already exists
     if (folders.includes(folderName)) {
       toast({
         title: "Error",
@@ -313,7 +292,6 @@ const Room = () => {
     const updatedFolders = [...folders, folderName];
     setFolders(updatedFolders);
     
-    // Emit folder update to other users
     if (roomId) {
       socketService.emit("folder-update", { folders: updatedFolders, roomId });
     }
@@ -324,17 +302,24 @@ const Room = () => {
     });
   };
   
-  // Update session name
   const handleUpdateSessionName = (name: string) => {
     setSessionName(name);
     
-    // In a real implementation, you would emit this to other users
     if (roomId) {
       socketService.emit("session-update", { name, roomId });
     }
   };
 
-  // Handle access control
+  const copySessionCode = () => {
+    if (roomId) {
+      navigator.clipboard.writeText(roomId);
+      toast({
+        title: "Session code copied",
+        description: "Share this code with others to join your session",
+      });
+    }
+  };
+
   if (roomId && user && !isRoomOwner(roomId) && !isParticipant(roomId)) {
     if (isPendingApproval(roomId)) {
       return <PendingApproval />;
@@ -355,14 +340,28 @@ const Room = () => {
           sessionName={sessionName}
           onUpdateSessionName={handleUpdateSessionName}
           isOwner={roomId ? isRoomOwner(roomId) : true}
+          onCopySessionCode={copySessionCode}
         />
+
+        {roomId && (
+          <div className="mb-4 flex items-center bg-primary/10 p-3 rounded-md">
+            <div className="flex-1">
+              <span className="text-sm font-medium">Session Code:</span>
+              <code className="ml-2 font-mono bg-background px-2 py-1 rounded text-sm">{roomId}</code>
+            </div>
+            <Button variant="outline" size="sm" onClick={copySessionCode} className="ml-2">
+              <CopyIcon className="h-4 w-4 mr-1" />
+              Copy
+            </Button>
+          </div>
+        )}
 
         <PanelToggleBar 
           visiblePanels={visiblePanels}
           togglePanelVisibility={togglePanelVisibility}
         />
 
-        <div className="h-[calc(100vh-12rem)]">
+        <div className="h-[calc(100vh-16rem)]">
           <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
             <EditorPanel
               showFileExplorer={showFileExplorer}
@@ -396,7 +395,6 @@ const Room = () => {
         </div>
       </div>
       
-      {/* Access Request Dialog */}
       <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
         <DialogContent>
           <DialogHeader>
