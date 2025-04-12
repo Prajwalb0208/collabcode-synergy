@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -15,7 +16,7 @@ import { CodeFile, VisiblePanels } from "./types";
 import { socketService } from "@/services/socketService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, X, CopyIcon } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -342,19 +343,6 @@ const Room = () => {
           isOwner={roomId ? isRoomOwner(roomId) : true}
           onCopySessionCode={copySessionCode}
         />
-
-        {roomId && (
-          <div className="mb-4 flex items-center bg-primary/10 p-3 rounded-md">
-            <div className="flex-1">
-              <span className="text-sm font-medium">Session Code:</span>
-              <code className="ml-2 font-mono bg-background px-2 py-1 rounded text-sm">{roomId}</code>
-            </div>
-            <Button variant="outline" size="sm" onClick={copySessionCode} className="ml-2">
-              <CopyIcon className="h-4 w-4 mr-1" />
-              Copy
-            </Button>
-          </div>
-        )}
 
         <PanelToggleBar 
           visiblePanels={visiblePanels}

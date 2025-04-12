@@ -1,9 +1,14 @@
 
 import { Button } from "@/components/ui/button";
-import { Play, Download, Save, FileText, FilePlus, Share, Edit, Check, Copy } from "lucide-react";
+import { Play, Download, Save, FileText, FilePlus, Share, Edit, Check, Copy, Link } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface RoomHeaderProps {
   roomId?: string;
@@ -51,7 +56,8 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
 
   const handleShareRoom = () => {
     if (roomId) {
-      navigator.clipboard.writeText(`${window.location.origin}/room/${roomId}`);
+      const shareUrl = `${window.location.origin}/room/${roomId}`;
+      navigator.clipboard.writeText(shareUrl);
       toast({
         title: "Room link copied!",
         description: "Share this link with collaborators to join this room."
@@ -88,10 +94,12 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
       navigator.clipboard.writeText(roomId);
       toast({
         title: "Session code copied!",
-        description: "Share this code with collaborators to join this session."
+        description: "Share this code with others to join your session."
       });
     }
   };
+
+  const shareUrl = roomId ? `${window.location.origin}/room/${roomId}` : '';
 
   return (
     <div className="flex flex-col space-y-4 mb-4">
@@ -127,19 +135,60 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
           )}
         </div>
         
-        <div className="flex items-center gap-2 border border-border rounded-md px-3 py-1.5 bg-muted/30">
-          <span className="text-sm font-medium">Session ID:</span>
-          <code className="text-sm font-mono text-primary">{roomId || "Creating..."}</code>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleCopySessionCode} 
-            className="h-6 w-6 ml-1"
-            title="Copy session code"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Share className="h-4 w-4" />
+              Share Session
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="space-y-4">
+              <h4 className="font-medium">Share this session</h4>
+              <div className="space-y-2">
+                <div className="flex flex-col space-y-1">
+                  <label className="text-xs text-muted-foreground">Share link</label>
+                  <div className="flex items-stretch">
+                    <Input
+                      value={shareUrl}
+                      readOnly
+                      className="rounded-r-none"
+                    />
+                    <Button
+                      variant="secondary"
+                      className="h-10 rounded-l-none px-3"
+                      onClick={handleShareRoom}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <label className="text-xs text-muted-foreground">Session code</label>
+                  <div className="flex items-stretch">
+                    <Input
+                      value={roomId || ''}
+                      readOnly
+                      className="font-mono rounded-r-none"
+                    />
+                    <Button
+                      variant="secondary"
+                      className="h-10 rounded-l-none px-3"
+                      onClick={handleCopySessionCode}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  Anyone with this link or code can join your session
+                </p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       
       <div className="flex items-center justify-between">
@@ -163,10 +212,6 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Export
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleShareRoom}>
-            <Share className="h-4 w-4 mr-2" />
-            Share
           </Button>
           <Button 
             variant="outline" 
