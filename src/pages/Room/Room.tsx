@@ -17,6 +17,7 @@ import { socketService } from "@/services/socketService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
+import { generateRoomId } from "@/lib/utils";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -29,7 +30,8 @@ const Room = () => {
     isPendingApproval, 
     requestAccess,
     approveAccess,
-    denyAccess
+    denyAccess,
+    getRoom
   } = useRoomHistory();
   const [currentFile, setCurrentFile] = useState<CodeFile>({
     name: "main.js",
@@ -76,12 +78,14 @@ const Room = () => {
       navigate(`/room/${newRoomId}`, { replace: true });
     } else {
       document.title = `Room: ${roomId} | CollabCode`;
+      
+      // Load session name if available
+      const existingRoom = getRoom(roomId);
+      if (existingRoom) {
+        setSessionName(existingRoom.name || "Collaborative Session");
+      }
     }
-  }, [roomId, navigate]);
-  
-  const generateRoomId = () => {
-    return Math.random().toString(36).substring(2, 10);
-  };
+  }, [roomId, navigate, getRoom]);
 
   useEffect(() => {
     if (roomId && user) {
@@ -144,6 +148,12 @@ const Room = () => {
             description: "Your request to join the room has been denied",
             variant: "destructive"
           });
+        }
+      });
+      
+      socketService.on("session-update", (data) => {
+        if (data.name) {
+          setSessionName(data.name);
         }
       });
     }

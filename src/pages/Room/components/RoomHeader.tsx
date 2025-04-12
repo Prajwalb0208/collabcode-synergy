@@ -9,6 +9,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface RoomHeaderProps {
   roomId?: string;
@@ -154,13 +160,22 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
                       readOnly
                       className="rounded-r-none"
                     />
-                    <Button
-                      variant="secondary"
-                      className="h-10 rounded-l-none px-3"
-                      onClick={handleShareRoom}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            className="h-10 rounded-l-none px-3"
+                            onClick={handleShareRoom}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy share link</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
                 
@@ -172,18 +187,27 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
                       readOnly
                       className="font-mono rounded-r-none"
                     />
-                    <Button
-                      variant="secondary"
-                      className="h-10 rounded-l-none px-3"
-                      onClick={handleCopySessionCode}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            className="h-10 rounded-l-none px-3"
+                            onClick={handleCopySessionCode}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy session code</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
                 
-                <p className="text-xs text-muted-foreground">
-                  Anyone with this link or code can join your session
+                <p className="text-xs text-muted-foreground mt-2">
+                  Share either the link or code with others to join this session
                 </p>
               </div>
             </div>

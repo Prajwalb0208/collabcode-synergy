@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
-import { Github } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 export interface CodeFile {
@@ -104,7 +103,7 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         };
         return newRooms;
       } else {
-        // Add new room, limit to 20 recent rooms
+        // Add new room, limit to 50 recent rooms (increased from 20)
         const newRoom: Room = {
           id: roomId,
           name: `Session ${roomId.substring(0, 4)}...`,
@@ -116,7 +115,7 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           pendingRequests: [],
           files: []
         };
-        return [newRoom, ...prev].slice(0, 20);
+        return [newRoom, ...prev].slice(0, 50);
       }
     });
   };
