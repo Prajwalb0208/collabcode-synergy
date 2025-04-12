@@ -16,47 +16,50 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Create a default logged-in user
+  const defaultUser: User = {
+    id: "default-user-id",
+    name: "Default User",
+    email: "user@example.com",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
+    provider: "default"
+  };
+
+  const [user, setUser] = useState<User | null>(defaultUser);
+  const [isLoading, setIsLoading] = useState(false);
   const { login, register, loginWithProvider, logout } = useAuthMethods(setUser, setIsLoading);
 
-  // Check if user is logged in on mount
-  useEffect(() => {
-    const checkAuthState = async () => {
-      try {
-        const firebaseUser = await getCurrentUser();
-        if (firebaseUser) {
-          const formattedUser = formatUser(firebaseUser);
-          setUser(formattedUser);
-        }
-      } catch (error) {
-        console.error("Error checking auth state:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Always return success for auth methods
+  const alwaysSuccessLogin = async () => {
+    console.log("Auto login success");
+    return true;
+  };
 
-    checkAuthState();
-  }, []);
+  const alwaysSuccessRegister = async () => {
+    console.log("Auto register success");
+    return true;
+  };
 
-  // Set up auth state listener
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      setIsLoading(true);
-      if (firebaseUser) {
-        const formattedUser = formatUser(firebaseUser);
-        setUser(formattedUser);
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
+  const alwaysSuccessLoginWithProvider = async () => {
+    console.log("Auto provider login success");
+    return true;
+  };
 
-    return () => unsubscribe();
-  }, []);
+  const alwaysSuccessLogout = () => {
+    console.log("Logout attempted but user remains logged in");
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, loginWithProvider, logout }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        isLoading, 
+        login: alwaysSuccessLogin, 
+        register: alwaysSuccessRegister, 
+        loginWithProvider: alwaysSuccessLoginWithProvider, 
+        logout: alwaysSuccessLogout 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
