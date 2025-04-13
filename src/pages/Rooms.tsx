@@ -16,6 +16,9 @@ import {
   Github, 
   Folder,
   Trash2,
+  MoreVertical 
+} from "lucide-react";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -25,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger
-} from "lucide-react";
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -35,7 +38,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
 
 const Rooms = () => {
   const { recentRooms, deleteRoom } = useRoomHistory();
@@ -133,13 +135,34 @@ const Rooms = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive"
-                          onClick={(e) => handleDeleteRoom(room.id, e)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete session
-                        </DropdownMenuItem>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onSelect={(e) => e.preventDefault()}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete session
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this session? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={(e) => handleDeleteRoom(room.id, e)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
