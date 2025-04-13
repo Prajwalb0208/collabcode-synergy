@@ -2,10 +2,11 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Terminal, Play, FilePlus } from "lucide-react";
+import { Terminal, Play, FilePlus, Download } from "lucide-react";
 import CodeEditor from "@/components/CodeEditor";
 import FileExplorer from "@/components/FileExplorer";
 import { CodeFile } from "../types";
+import { useState } from "react";
 
 interface EditorPanelProps {
   showFileExplorer: boolean;
@@ -34,6 +35,66 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   onCreateFile,
   onCreateFolder
 }) => {
+  const [terminalInput, setTerminalInput] = useState<string>("");
+  const [terminalHistory, setTerminalHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
+  const handleTerminalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!terminalInput.trim()) return;
+    
+    // Add to terminal history
+    setTerminalHistory(prev => [...prev, terminalInput]);
+    setHistoryIndex(terminalHistory.length + 1);
+    
+    // Execute the command
+    if (handleRunCode) {
+      // Use executeTerminalCommand directly for shell commands
+      import('@/services/codeExecutor').then(({ executeTerminalCommand }) => {
+        const output = executeTerminalCommand(terminalInput);
+        
+        // Update terminal output in the room state
+        // This assumes terminal is already an array of strings
+        (window as any).addTerminalOutput?.(output);
+      });
+    }
+    
+    // Clear input
+    setTerminalInput("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        setHistoryIndex(historyIndex - 1);
+        setTerminalInput(terminalHistory[historyIndex - 1]);
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex < terminalHistory.length - 1) {
+        setHistoryIndex(historyIndex + 1);
+        setTerminalInput(terminalHistory[historyIndex + 1]);
+      } else if (historyIndex === terminalHistory.length - 1) {
+        setHistoryIndex(terminalHistory.length);
+        setTerminalInput("");
+      }
+    }
+  };
+  
+  const handleDownloadFile = () => {
+    const blob = new Blob([currentFile.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentFile.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       {showFileExplorer && (
@@ -76,6 +137,15 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   </TabsTrigger>
                 ))}
               </TabsList>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDownloadFile}
+                className="mr-2"
+                title="Download File"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
             </div>
           </Tabs>
         </div>
@@ -108,10 +178,10 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   Run
                 </Button>
               </div>
-              <div className="terminal-container p-2 text-zinc-300 font-mono text-sm h-[calc(100%-40px)] overflow-auto custom-scrollbar">
+              <div className="terminal-container p-2 text-zinc-300 font-mono text-sm h-[calc(100%-85px)] overflow-auto custom-scrollbar">
                 {terminal.length === 0 ? (
                   <div className="text-zinc-500 italic p-2">
-                    Terminal ready. Click 'Run' to execute your code.
+                    Terminal ready. Type commands below or click 'Run' to execute code.
                   </div>
                 ) : (
                   terminal.map((line, i) => (
@@ -121,6 +191,21 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   ))
                 )}
               </div>
+              <form onSubmit={handleTerminalSubmit} className="border-t border-zinc-700 p-2">
+                <div className="flex items-center bg-zinc-800 rounded">
+                  <span className="text-zinc-500 pl-2">$</span>
+                  <input
+                    type="text"
+                    value={terminalInput}
+                    onChange={(e) => setTerminalInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="bg-transparent border-none w-full p-2 text-zinc-300 text-sm focus:outline-none font-mono"
+                    placeholder="Enter command..."
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                </div>
+              </form>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
