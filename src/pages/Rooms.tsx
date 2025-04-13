@@ -6,15 +6,47 @@ import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/layouts/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { History, Clock, ArrowRight, Plus, Users, Code, Github, Folder } from "lucide-react";
+import { 
+  History, 
+  Clock, 
+  ArrowRight, 
+  Plus, 
+  Users, 
+  Code, 
+  Github, 
+  Folder,
+  Trash2,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 
 const Rooms = () => {
-  const { recentRooms } = useRoomHistory();
+  const { recentRooms, deleteRoom } = useRoomHistory();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const handleDeleteRoom = (roomId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    deleteRoom(roomId);
+  };
 
   return (
     <MainLayout>
@@ -76,7 +108,8 @@ const Rooms = () => {
             {recentRooms.map((room) => (
               <Card 
                 key={room.id} 
-                className="overflow-hidden hover:shadow-md transition-all h-[240px] flex flex-col"
+                className="overflow-hidden hover:shadow-md transition-all h-[240px] flex flex-col relative"
+                onClick={() => navigate(`/room/${room.id}`)}
               >
                 <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
                   <div>
@@ -93,6 +126,22 @@ const Rooms = () => {
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
                       <Users className="h-4 w-4 text-primary" />
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 absolute top-2 right-2">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => handleDeleteRoom(room.id, e)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete session
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardHeader>
                 
@@ -118,7 +167,6 @@ const Rooms = () => {
                   <Button
                     variant="default"
                     className="w-full"
-                    onClick={() => navigate(`/room/${room.id}`)}
                   >
                     Join Room
                     <ArrowRight className="ml-2 h-4 w-4" />

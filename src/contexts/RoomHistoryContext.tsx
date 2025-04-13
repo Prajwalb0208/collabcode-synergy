@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { toast } from "@/components/ui/use-toast";
@@ -37,6 +36,7 @@ interface RoomHistoryContextType {
   denyAccess: (roomId: string, userId: string) => void;
   connectGithubRepo: (roomId: string, repoUrl: string) => void;
   getRoom: (roomId: string) => Room | undefined;
+  deleteRoom: (roomId: string) => void;
 }
 
 const RoomHistoryContext = createContext<RoomHistoryContextType | undefined>(undefined);
@@ -217,7 +217,15 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
     });
   };
-  
+
+  const deleteRoom = (roomId: string) => {
+    setRecentRooms(prev => prev.filter(room => room.id !== roomId));
+    toast({
+      title: "Room Deleted",
+      description: "The session has been removed from your history.",
+    });
+  };
+
   const getRoom = (roomId: string) => {
     return recentRooms.find(room => room.id === roomId);
   };
@@ -236,7 +244,8 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         approveAccess,
         denyAccess,
         connectGithubRepo,
-        getRoom
+        getRoom,
+        deleteRoom
       }}
     >
       {children}
