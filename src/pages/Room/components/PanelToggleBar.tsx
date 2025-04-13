@@ -1,7 +1,7 @@
 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Code, Terminal, Video, Bot } from "lucide-react";
+import { Code, Terminal, Video } from "lucide-react";
 import { VisiblePanels } from "../types";
 
 interface PanelToggleBarProps {
@@ -48,17 +48,6 @@ const PanelToggleBar: React.FC<PanelToggleBarProps> = ({
           <Label htmlFor="videos" className="flex items-center text-sm">
             <Video className="h-3.5 w-3.5 mr-1.5" />
             Video
-          </Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="ai" 
-            checked={visiblePanels.ai} 
-            onCheckedChange={() => togglePanelVisibility('ai')}
-          />
-          <Label htmlFor="ai" className="flex items-center text-sm">
-            <Bot className="h-3.5 w-3.5 mr-1.5" />
-            AI
           </Label>
         </div>
       </div>
