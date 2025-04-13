@@ -168,9 +168,31 @@ export const executeCode = (code: string, language: string): string[] => {
       }
       break;
       
+    case "bash":
+    case "shell":
+      output.push("Terminal command detected. Processing...");
+      
+      // Handle npm/yarn/node commands - just showing simulation output
+      if (code.includes("npm install") || code.includes("yarn add")) {
+        const packages = code.split(/install|add/)[1].trim();
+        output.push(`Installing packages: ${packages}`);
+        output.push("Fetching package information...");
+        setTimeout(() => {
+          output.push("Package installation completed successfully.");
+        }, 500);
+      } else if (code.includes("git clone")) {
+        const repo = code.split("git clone")[1].trim();
+        output.push(`Cloning repository: ${repo}`);
+        output.push("Repository cloned successfully.");
+      } else {
+        output.push(`Command '${code.trim()}' executed.`);
+        output.push("Note: This is a simulation. Real shell commands cannot be executed in the browser environment.");
+      }
+      break;
+      
     default:
       output.push(`Execution for ${language} is not directly supported.`);
-      output.push("Only JavaScript/TypeScript, HTML, and CSS execution is available.");
+      output.push("Only JavaScript/TypeScript, HTML, CSS, and basic shell commands are simulated.");
   }
   
   return output;

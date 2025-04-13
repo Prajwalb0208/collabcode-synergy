@@ -1,9 +1,7 @@
 
-import { useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import CollaborationPanel from "@/components/CollaborationPanel";
 import VideoCall from "@/components/VideoCall";
-import AIAssistant from "@/components/AIAssistant";
 import { VisiblePanels, CodeFile } from "@/pages/Room/types";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,7 +24,6 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
   toggleChat,
   roomId,
   isRoomOwner,
-  currentFile,
   files,
   accessRequests = [],
   onApproveAccess,
@@ -57,20 +54,16 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
             </>
           )}
           
-          {visiblePanels.ai && (
+          {visiblePanels.collaboration && (
             <ResizablePanel defaultSize={visiblePanels.videos ? 60 : 100} minSize={20}>
-              {roomId ? (
-                <CollaborationPanel 
-                  isOwner={isRoomOwner} 
-                  roomId={roomId}
-                  files={files}
-                  accessRequests={accessRequests}
-                  onApproveAccess={onApproveAccess}
-                  onDenyAccess={onDenyAccess}
-                />
-              ) : (
-                <AIAssistant currentFile={currentFile} />
-              )}
+              <CollaborationPanel 
+                isOwner={isRoomOwner} 
+                roomId={roomId}
+                files={files}
+                accessRequests={accessRequests}
+                onApproveAccess={onApproveAccess}
+                onDenyAccess={onDenyAccess}
+              />
             </ResizablePanel>
           )}
         </ResizablePanelGroup>

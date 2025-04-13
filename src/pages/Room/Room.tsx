@@ -63,7 +63,7 @@ const Room = () => {
     editor: true,
     terminal: true,
     videos: true,
-    ai: true
+    collaboration: true
   });
   const [showFileExplorer, setShowFileExplorer] = useState(true);
   const [folders, setFolders] = useState<string[]>([]);
@@ -375,7 +375,7 @@ const Room = () => {
               onCreateFolder={handleCreateFolder}
             />
 
-            {(visiblePanels.videos || visiblePanels.ai) && (
+            {(visiblePanels.videos || visiblePanels.collaboration) && (
               <CollaborationSidebar
                 visiblePanels={visiblePanels}
                 isChatOpen={isChatOpen}
