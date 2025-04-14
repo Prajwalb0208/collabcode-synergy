@@ -12,6 +12,7 @@ export interface CodeFile {
   content: string;
   lastEdited?: Date;
   editedBy?: string;
+  path?: string;
 }
 
 export interface AutoSaveConfig {

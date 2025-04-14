@@ -2,10 +2,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, MessageCircle, Copy } from "lucide-react";
+import { 
+  Video, 
+  VideoOff, 
+  Mic, 
+  MicOff, 
+  PhoneOff, 
+  ScreenShare, 
+  MessageCircle, 
+  Copy, 
+  Share2 
+} from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { socketService } from "@/services/socketService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 interface VideoCallProps {
   onChatToggle?: () => void;
@@ -20,6 +31,7 @@ interface RemoteUser {
   color: string;
   cameraOn: boolean;
   micOn: boolean;
+  screenSharing?: boolean;
 }
 
 const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId }) => {
@@ -48,7 +60,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
           avatar: data.userAvatar,
           color: getRandomColor(),
           cameraOn: false,
-          micOn: false
+          micOn: false,
+          screenSharing: false
         }];
       });
       
@@ -75,7 +88,12 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
       setRemoteUsers(prev => 
         prev.map(u => 
           u.id === data.userId 
-            ? { ...u, cameraOn: data.cameraOn, micOn: data.micOn } 
+            ? { 
+                ...u, 
+                cameraOn: data.cameraOn, 
+                micOn: data.micOn,
+                screenSharing: data.screenSharing || false
+              } 
             : u
         )
       );
@@ -128,7 +146,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
           userId: user?.id, 
           userName: user?.name,
           cameraOn: true, 
-          micOn: isMicOn 
+          micOn: isMicOn,
+          screenSharing: isScreenSharing
         });
       }
       
@@ -167,7 +186,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
         userId: user?.id, 
         userName: user?.name,
         cameraOn: false, 
-        micOn: isMicOn 
+        micOn: isMicOn,
+        screenSharing: isScreenSharing
       });
     }
   };
@@ -222,7 +242,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
             userId: user?.id, 
             userName: user?.name,
             cameraOn: isCameraOn, 
-            micOn: false 
+            micOn: false,
+            screenSharing: isScreenSharing
           });
         }
         
@@ -269,7 +290,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
               userId: user?.id,
               userName: user?.name,
               cameraOn: isCameraOn, 
-              micOn: true 
+              micOn: true,
+              screenSharing: isScreenSharing
             });
           }
           
@@ -303,6 +325,18 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
           await startWebcam();
         }
         setIsScreenSharing(false);
+        
+        // Notify other users about screen sharing ended
+        if (roomId) {
+          socketService.emit("media-state-change", { 
+            roomId, 
+            userId: user?.id,
+            userName: user?.name,
+            cameraOn: isCameraOn, 
+            micOn: isMicOn,
+            screenSharing: false
+          });
+        }
       } else {
         try {
           const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -318,9 +352,34 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
           setStream(displayStream);
           setIsScreenSharing(true);
           
+          // Notify other users about screen sharing started
+          if (roomId) {
+            socketService.emit("media-state-change", { 
+              roomId, 
+              userId: user?.id,
+              userName: user?.name,
+              cameraOn: isCameraOn, 
+              micOn: isMicOn,
+              screenSharing: true
+            });
+          }
+          
           // Automatically stop screen sharing when the user ends it
           displayStream.getVideoTracks()[0].onended = () => {
             setIsScreenSharing(false);
+            
+            // Notify other users screen sharing ended
+            if (roomId) {
+              socketService.emit("media-state-change", { 
+                roomId, 
+                userId: user?.id,
+                userName: user?.name,
+                cameraOn: isCameraOn, 
+                micOn: isMicOn,
+                screenSharing: false
+              });
+            }
+            
             if (isCameraOn) {
               startWebcam();
             }
@@ -368,9 +427,25 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
     }
   };
 
+  const handleShareLink = () => {
+    if (roomId) {
+      const shareUrl = `${window.location.origin}/room/${roomId}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Session link copied",
+        description: "Share this link with others to join your session",
+        duration: 2000
+      });
+    }
+  };
+
   // Define max allowed participants
   const MAX_PARTICIPANTS = 10;
   const showParticipantsWarning = remoteUsers.length >= MAX_PARTICIPANTS - 1;
+
+  // Count all participants (including screen shares as separate entities)
+  const screenShareCount = remoteUsers.filter(user => user.screenSharing).length;
+  const totalParticipantsDisplay = remoteUsers.length + (isScreenSharing ? 1 : 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -386,18 +461,33 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
         </div>
       )}
       
-      {roomId && (
-        <div className="bg-primary/10 p-3 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground">Session Code</div>
-            <div className="font-mono font-medium">{roomId}</div>
-          </div>
+      <div className="bg-primary/10 p-3 flex items-center justify-between">
+        <div>
+          <div className="text-xs text-muted-foreground">Session Code</div>
+          <div className="font-mono font-medium">{roomId}</div>
+        </div>
+        <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={copyRoomId}>
             <Copy className="h-4 w-4 mr-1" />
-            Copy
+            Copy Code
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleShareLink}>
+            <Share2 className="h-4 w-4 mr-1" />
+            Share Link
           </Button>
         </div>
-      )}
+      </div>
+      
+      <div className="p-2 border-b border-border/50">
+        <div className="text-sm flex items-center gap-2">
+          <span className="font-medium">Participants: {remoteUsers.length + 1}</span>
+          {screenShareCount > 0 && (
+            <Badge variant="outline" className="text-xs">
+              {screenShareCount} screen{screenShareCount > 1 ? 's' : ''} shared
+            </Badge>
+          )}
+        </div>
+      </div>
       
       <div className="flex-1 p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Current user's video */}
@@ -415,7 +505,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
               <Avatar className="h-16 w-16 mb-2">
                 <AvatarImage src={user?.avatar} />
                 <AvatarFallback className="bg-primary">
-                  {user?.name.substring(0, 2).toUpperCase() || "YOU"}
+                  {user?.name?.substring(0, 2).toUpperCase() || "YOU"}
                 </AvatarFallback>
               </Avatar>
               <span className="text-sm font-medium">{user?.name || "You"}</span>
@@ -424,10 +514,50 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
               </span>
             </div>
           )}
-          <div className="absolute bottom-2 left-2 bg-background/70 backdrop-blur-sm rounded px-2 py-1 text-xs font-medium">
-            You {isMicOn ? '🎤' : '🔇'}
+          <div className="absolute bottom-2 left-2 flex gap-1.5">
+            {isCameraOn && (
+              <Badge variant="secondary" className="bg-blue-500/80 text-white">
+                <Video className="h-3 w-3 mr-1" />
+                Camera
+              </Badge>
+            )}
+            {isMicOn && (
+              <Badge variant="secondary" className="bg-green-500/80 text-white">
+                <Mic className="h-3 w-3 mr-1" />
+                Mic
+              </Badge>
+            )}
+            {isScreenSharing && (
+              <Badge variant="secondary" className="bg-purple-500/80 text-white">
+                <ScreenShare className="h-3 w-3 mr-1" />
+                Screen
+              </Badge>
+            )}
+            {!isCameraOn && !isMicOn && !isScreenSharing && (
+              <Badge variant="secondary" className="bg-gray-500/80 text-white">
+                You
+              </Badge>
+            )}
           </div>
         </div>
+
+        {/* If user is screen sharing, show it as a separate tile (Google Meet style) */}
+        {isScreenSharing && (
+          <div className="aspect-video bg-muted rounded-lg overflow-hidden relative flex items-center justify-center border-2 border-purple-500">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-sm font-medium">Your screen</p>
+                <p className="text-xs text-muted-foreground">Everyone can see your screen</p>
+              </div>
+            </div>
+            <div className="absolute top-2 right-2">
+              <Badge variant="secondary" className="bg-purple-500/80 text-white">
+                <ScreenShare className="h-3 w-3 mr-1" />
+                Your screen
+              </Badge>
+            </div>
+          </div>
+        )}
 
         {/* Remote users */}
         {remoteUsers.map(remoteUser => (
@@ -454,18 +584,52 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
                 <span className="text-xs text-muted-foreground mt-1">Camera off</span>
               </div>
             )}
-            <div className="absolute bottom-2 left-2 bg-background/70 backdrop-blur-sm rounded px-2 py-1 text-xs font-medium">
-              {remoteUser.name} {remoteUser.micOn ? '🎤' : '🔇'}
+            <div className="absolute bottom-2 left-2 flex gap-1.5">
+              {remoteUser.cameraOn && (
+                <Badge variant="secondary" className="bg-blue-500/80 text-white">
+                  <Video className="h-3 w-3 mr-1" />
+                  Camera
+                </Badge>
+              )}
+              {remoteUser.micOn && (
+                <Badge variant="secondary" className="bg-green-500/80 text-white">
+                  <Mic className="h-3 w-3 mr-1" />
+                  Mic
+                </Badge>
+              )}
+              {!remoteUser.cameraOn && !remoteUser.micOn && (
+                <Badge variant="secondary" className="bg-gray-500/80 text-white">
+                  {remoteUser.name}
+                </Badge>
+              )}
+            </div>
+          </div>
+        ))}
+        
+        {/* Show screen shares as separate tiles for remote users (Google Meet style) */}
+        {remoteUsers.filter(user => user.screenSharing).map(user => (
+          <div key={`${user.id}-screen`} className="aspect-video bg-muted rounded-lg overflow-hidden relative flex items-center justify-center border-2 border-purple-500">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-sm font-medium">{user.name}'s screen</p>
+                <p className="text-xs text-muted-foreground">Screen sharing</p>
+              </div>
+            </div>
+            <div className="absolute top-2 right-2">
+              <Badge variant="secondary" className="bg-purple-500/80 text-white">
+                <ScreenShare className="h-3 w-3 mr-1" />
+                Shared screen
+              </Badge>
             </div>
           </div>
         ))}
         
         {/* Placeholder tiles if there are no remote users */}
-        {remoteUsers.length === 0 && (
+        {remoteUsers.length === 0 && !isScreenSharing && (
           <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center">
             <div className="text-center text-muted-foreground">
               <p>Waiting for others to join</p>
-              <p className="text-xs mt-2">Share the session code to invite people</p>
+              <p className="text-xs mt-2">Share the session link to invite people</p>
             </div>
           </div>
         )}
@@ -477,7 +641,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
             variant={isCameraOn ? "default" : "outline"} 
             size="icon" 
             onClick={toggleCamera} 
-            className="rounded-full h-12 w-12"
+            className={`rounded-full h-12 w-12 ${isCameraOn ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
           >
             {isCameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
           </Button>
@@ -485,7 +649,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
             variant={isMicOn ? "default" : "outline"} 
             size="icon" 
             onClick={toggleMic} 
-            className="rounded-full h-12 w-12"
+            className={`rounded-full h-12 w-12 ${isMicOn ? 'bg-green-600 hover:bg-green-700' : ''}`}
           >
             {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
           </Button>
@@ -493,7 +657,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
             variant={isScreenSharing ? "default" : "outline"} 
             size="icon" 
             onClick={toggleScreenShare} 
-            className="rounded-full h-12 w-12"
+            className={`rounded-full h-12 w-12 ${isScreenSharing ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
           >
             <ScreenShare className="h-5 w-5" />
           </Button>
