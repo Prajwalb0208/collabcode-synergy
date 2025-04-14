@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -73,7 +72,6 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
   const [isNameFocused, setIsNameFocused] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   
-  // Format the last saved time
   const formatSavedTime = () => {
     if (!lastSavedTime) return "Not saved yet";
     
@@ -95,7 +93,6 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
 
   const handleNewFile = () => {
     if (fileName.trim()) {
-      // Add file extension if not already present
       let fullFileName = fileName;
       if (!fullFileName.includes(".")) {
         const extensions: Record<string, string> = {
@@ -121,7 +118,6 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
     }
   };
   
-  // Focus input when name edit dialog opens
   useEffect(() => {
     if (showNameEditDialog && nameInputRef.current) {
       nameInputRef.current.focus();
@@ -169,7 +165,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
                 <Switch 
                   checked={!!autoSave} 
                   onCheckedChange={onToggleAutoSave}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
               <Button 
@@ -235,14 +231,13 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button onClick={handleRunCode} size="sm">
+          <Button onClick={handleRunCode} size="sm" className="bg-blue-600 hover:bg-blue-700">
             <Play className="h-4 w-4 mr-2" />
             Run
           </Button>
         </div>
       </div>
       
-      {/* New File Dialog */}
       <Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
         <DialogContent>
           <DialogHeader>
@@ -275,12 +270,11 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleNewFile}>Create</Button>
+            <Button onClick={handleNewFile} className="bg-blue-600 hover:bg-blue-700">Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Session Name Edit Dialog */}
       <Dialog open={showNameEditDialog} onOpenChange={setShowNameEditDialog}>
         <DialogContent>
           <DialogHeader>
@@ -312,7 +306,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleNameEdit}>Save</Button>
+            <Button onClick={handleNameEdit} className="bg-blue-600 hover:bg-blue-700">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -19,3 +19,10 @@ export interface AutoSaveConfig {
   interval: number; // in milliseconds
   lastSaved?: Date;
 }
+
+export interface GitHubRepo {
+  owner: string;
+  repo: string;
+  branch?: string;
+  path?: string;
+}

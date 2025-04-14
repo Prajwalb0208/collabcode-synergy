@@ -56,7 +56,20 @@ export default {
 				code: {
 					DEFAULT: 'hsl(var(--code-background))',
 					foreground: 'hsl(var(--code-foreground))'
-				}
+				},
+				blue: {
+					50: '#eff6ff',
+					100: '#dbeafe',
+					200: '#bfdbfe',
+					300: '#93c5fd',
+					400: '#60a5fa',
+					500: '#3b82f6',
+					600: '#2563eb',
+					700: '#1d4ed8',
+					800: '#1e40af',
+					900: '#1e3a8a',
+					950: '#172554',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -98,6 +111,10 @@ export default {
 				},
 				'shimmer': {
 					'100%': { transform: 'translateX(100%)' }
+				},
+				'save-pulse': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.5' }
 				}
 			},
 			animation: {
@@ -109,11 +126,13 @@ export default {
 				'slide-out': 'slide-out 0.3s ease-out',
 				'pulse-soft': 'pulse-soft 2s infinite ease-in-out',
 				'cursor-blink': 'cursor-blink 1s infinite',
-				'shimmer': 'shimmer 2s infinite'
+				'shimmer': 'shimmer 2s infinite',
+				'save-pulse': 'save-pulse 1.5s infinite ease-in-out'
 			},
 			boxShadow: {
 				'soft': '0 2px 10px rgba(0, 0, 0, 0.05)',
-				'card': '0 4px 20px rgba(0, 0, 0, 0.08)'
+				'card': '0 4px 20px rgba(0, 0, 0, 0.08)',
+				'blue': '0 4px 14px rgba(59, 130, 246, 0.3)'
 			}
 		}
 	},

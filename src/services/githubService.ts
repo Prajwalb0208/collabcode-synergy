@@ -105,7 +105,6 @@ export const importFilesFromGitHub = async (repo: GitHubRepo): Promise<CodeFile[
           
           files.push({
             name: item.name,
-            path: item.path,
             language: getLanguageFromFileName(item.name),
             content
           });

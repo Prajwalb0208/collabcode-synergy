@@ -102,7 +102,7 @@ const GitHubImport: React.FC<GitHubImportProps> = ({
           <Button 
             onClick={handleImport} 
             disabled={!url || loading}
-            className="gap-2"
+            className="gap-2 bg-blue-600 hover:bg-blue-700"
           >
             {loading ? "Importing..." : "Import Files"}
             {loading && (
