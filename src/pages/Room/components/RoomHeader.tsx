@@ -1,62 +1,53 @@
 
-import { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { 
   Play, 
-  Save, 
-  FolderOpen, 
-  Share2, 
-  FilePlus, 
-  Github,
+  Save,
+  FileSymlink, 
+  Folder, 
+  Files, 
+  Copy, 
+  FolderClosed,
+  Download,
+  Share2,
   Settings,
-  Menu
+  Pencil
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogClose 
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
-import { GitHubRepo, CodeFile } from "../types";
-import GitHubImport from "@/components/GitHubImport";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 interface RoomHeaderProps {
   roomId?: string;
   handleRunCode: () => void;
   showFileExplorer: boolean;
   setShowFileExplorer: (show: boolean) => void;
-  onCreateFile?: (fileName: string, language: string, content?: string) => void;
+  onCreateFile: (fileName: string, language: string) => void;
   sessionName: string;
   onUpdateSessionName: (name: string) => void;
   isOwner: boolean;
   onCopySessionCode: () => void;
+  onSaveSession?: () => void;
+  autoSave?: boolean;
+  onToggleAutoSave?: () => void;
+  lastSavedTime?: Date | null;
 }
 
 const RoomHeader: React.FC<RoomHeaderProps> = ({
@@ -68,318 +59,264 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
   sessionName,
   onUpdateSessionName,
   isOwner,
-  onCopySessionCode
+  onCopySessionCode,
+  onSaveSession,
+  autoSave = true,
+  onToggleAutoSave,
+  lastSavedTime
 }) => {
-  const [showCreateFileDialog, setShowCreateFileDialog] = useState(false);
-  const [fileName, setFileName] = useState('');
-  const [fileLanguage, setFileLanguage] = useState('javascript');
-  const [showGitHubImport, setShowGitHubImport] = useState(false);
-  const [showSettingsSheet, setShowSettingsSheet] = useState(false);
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [newSessionName, setNewSessionName] = useState(sessionName);
+  const [showNewFileDialog, setShowNewFileDialog] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [fileType, setFileType] = useState("javascript");
+  const [showNameEditDialog, setShowNameEditDialog] = useState(false);
+  const [editedName, setEditedName] = useState(sessionName);
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   
-  const handleCreateFile = () => {
-    if (!fileName) {
-      toast({
-        title: "Error",
-        description: "File name is required",
-        variant: "destructive"
-      });
-      return;
-    }
+  // Format the last saved time
+  const formatSavedTime = () => {
+    if (!lastSavedTime) return "Not saved yet";
     
-    if (onCreateFile) {
-      onCreateFile(fileName, fileLanguage);
-    }
+    const now = new Date();
+    const diff = now.getTime() - lastSavedTime.getTime();
     
-    setShowCreateFileDialog(false);
-    setFileName('');
-    setFileLanguage('javascript');
-  };
-  
-  const handleImportComplete = (files: CodeFile[]) => {
-    if (files.length > 0 && onCreateFile) {
-      files.forEach(file => {
-        onCreateFile(file.name, file.language, file.content);
-      });
+    if (diff < 60000) {
+      return "Just now";
+    } else if (diff < 3600000) {
+      const minutes = Math.floor(diff / 60000);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    } else if (diff < 86400000) {
+      const hours = Math.floor(diff / 3600000);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else {
+      return lastSavedTime.toLocaleString();
     }
-  };
-  
-  const handleSaveSettings = () => {
-    onUpdateSessionName(newSessionName);
-    setShowSettingsSheet(false);
-    
-    toast({
-      title: "Settings Saved",
-      description: "Room settings have been updated successfully.",
-    });
   };
 
-  const copySessionLink = () => {
-    const url = `${window.location.origin}/room/${roomId}`;
-    navigator.clipboard.writeText(url);
-    
-    toast({
-      title: "Link Copied",
-      description: "Session link copied to clipboard. Share this link to invite others.",
-    });
+  const handleNewFile = () => {
+    if (fileName.trim()) {
+      // Add file extension if not already present
+      let fullFileName = fileName;
+      if (!fullFileName.includes(".")) {
+        const extensions: Record<string, string> = {
+          javascript: ".js",
+          typescript: ".ts",
+          html: ".html",
+          css: ".css",
+          json: ".json"
+        };
+        fullFileName += extensions[fileType] || ".js";
+      }
+      
+      onCreateFile(fullFileName, fileType);
+      setFileName("");
+      setShowNewFileDialog(false);
+    }
   };
+
+  const handleNameEdit = () => {
+    if (editedName.trim()) {
+      onUpdateSessionName(editedName);
+      setShowNameEditDialog(false);
+    }
+  };
+  
+  // Focus input when name edit dialog opens
+  useEffect(() => {
+    if (showNameEditDialog && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [showNameEditDialog]);
 
   return (
-    <>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-4">
-        <div className="flex items-center">
-          <h2 className="text-lg md:text-xl font-semibold truncate mr-2">
+    <div className="flex flex-col gap-2 mb-4">
+      <div className="flex items-center justify-between">
+        <div 
+          className="flex items-center gap-2 group cursor-pointer"
+          onClick={() => isOwner && setShowNameEditDialog(true)}
+        >
+          <h1 className="text-xl font-semibold flex items-center gap-2">
             {sessionName}
-          </h2>
-          {roomId && (
-            <div className="text-xs text-muted-foreground">
-              ID: {roomId.substring(0, 8)}
-            </div>
-          )}
+            {isOwner && (
+              <Pencil className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
+          </h1>
+          <div className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
+            {roomId}
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopySessionCode();
+            }}
+            title="Copy session code"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
         </div>
         
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-8"
+          {onSaveSession && (
+            <div className="flex items-center mr-2">
+              <div className="text-xs text-muted-foreground mr-2">
+                {autoSave ? `Auto-saved ${formatSavedTime()}` : "Auto-save off"}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs">Auto-save</span>
+                <Switch 
+                  checked={!!autoSave} 
+                  onCheckedChange={onToggleAutoSave}
+                  size="sm"
+                />
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="ml-2"
+                onClick={onSaveSession}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+            </div>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowFileExplorer(!showFileExplorer)}
+            className="mr-2"
           >
-            <FolderOpen className="h-4 w-4 mr-2" />
+            {showFileExplorer ? <FolderClosed className="h-4 w-4 mr-2" /> : <Folder className="h-4 w-4 mr-2" />}
             {showFileExplorer ? "Hide Files" : "Show Files"}
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
-                <FilePlus className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" className="mr-2">
+                <FileSymlink className="h-4 w-4 mr-2" />
                 New File
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onCreateFile && onCreateFile('index.html', 'html')}>
-                HTML File
+              <DropdownMenuItem onClick={() => {
+                setFileType("javascript");
+                setShowNewFileDialog(true);
+              }}>
+                JavaScript (.js)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateFile && onCreateFile('script.js', 'javascript')}>
-                JavaScript File
+              <DropdownMenuItem onClick={() => {
+                setFileType("typescript");
+                setShowNewFileDialog(true);
+              }}>
+                TypeScript (.ts)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateFile && onCreateFile('styles.css', 'css')}>
-                CSS File
+              <DropdownMenuItem onClick={() => {
+                setFileType("html");
+                setShowNewFileDialog(true);
+              }}>
+                HTML (.html)
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowCreateFileDialog(true)}>
-                Custom File...
+              <DropdownMenuItem onClick={() => {
+                setFileType("css");
+                setShowNewFileDialog(true);
+              }}>
+                CSS (.css)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setFileType("json");
+                setShowNewFileDialog(true);
+              }}>
+                JSON (.json)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button variant="outline" size="sm" className="h-8" onClick={() => setShowGitHubImport(true)}>
-            <Github className="h-4 w-4 mr-2" />
-            Import from GitHub
+          
+          <Button onClick={handleRunCode} size="sm">
+            <Play className="h-4 w-4 mr-2" />
+            Run
           </Button>
-          
-          <div className="hidden md:flex items-center gap-2">
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="h-8" 
-              onClick={handleRunCode}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Run
-            </Button>
-            
-            {roomId && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8" 
-                onClick={() => setShowShareDialog(true)}
-              >
-                <Share2 className="h-4 w-4 mr-2" />
-                Share
-              </Button>
-            )}
-            
-            {isOwner && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8" 
-                onClick={() => {
-                  setNewSessionName(sessionName);
-                  setShowSettingsSheet(true);
-                }}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            )}
-          </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild className="md:hidden">
-              <Button variant="outline" size="sm" className="h-8 px-2">
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleRunCode}>
-                <Play className="h-4 w-4 mr-2" />
-                Run
-              </DropdownMenuItem>
-              
-              {roomId && (
-                <DropdownMenuItem onClick={() => setShowShareDialog(true)}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </DropdownMenuItem>
-              )}
-              
-              {isOwner && (
-                <DropdownMenuItem 
-                  onClick={() => {
-                    setNewSessionName(sessionName);
-                    setShowSettingsSheet(true);
-                  }}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
-
-      {/* Create File Dialog */}
-      <Dialog open={showCreateFileDialog} onOpenChange={setShowCreateFileDialog}>
+      
+      {/* New File Dialog */}
+      <Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New File</DialogTitle>
             <DialogDescription>
-              Enter a name and select a language for your new file.
+              Enter a name for your new {fileType} file.
             </DialogDescription>
           </DialogHeader>
-          
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="filename">File name</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                File Name
+              </Label>
               <Input
-                id="filename"
-                placeholder="e.g. index.js"
+                id="name"
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
+                placeholder={`example${fileType === "javascript" ? ".js" : fileType === "html" ? ".html" : fileType === "css" ? ".css" : ".ts"}`}
+                className="col-span-3"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleNewFile();
+                  }
+                }}
               />
             </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="language">Language</Label>
-              <Select value={fileLanguage} onValueChange={setFileLanguage}>
-                <SelectTrigger id="language">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="javascript">JavaScript</SelectItem>
-                  <SelectItem value="typescript">TypeScript</SelectItem>
-                  <SelectItem value="html">HTML</SelectItem>
-                  <SelectItem value="css">CSS</SelectItem>
-                  <SelectItem value="json">JSON</SelectItem>
-                  <SelectItem value="markdown">Markdown</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-          
           <DialogFooter>
-            <Button type="submit" onClick={handleCreateFile}>Create</Button>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleNewFile}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* GitHub Import Dialog */}
-      <GitHubImport
-        open={showGitHubImport}
-        onOpenChange={setShowGitHubImport}
-        onImportComplete={handleImportComplete}
-      />
-      
-      {/* Settings Sheet */}
-      <Sheet open={showSettingsSheet} onOpenChange={setShowSettingsSheet}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Room Settings</SheetTitle>
-            <SheetDescription>
-              Configure your coding room settings. Only room owners can change these settings.
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="space-y-4 py-6">
-            <div className="space-y-2">
-              <Label htmlFor="room-name">Room Name</Label>
-              <Input
-                id="room-name"
-                value={newSessionName}
-                onChange={(e) => setNewSessionName(e.target.value)}
-                placeholder="Enter room name"
-              />
-            </div>
-            
-            {/* Add more settings as needed */}
-          </div>
-          
-          <div className="mt-6 flex justify-end">
-            <Button onClick={handleSaveSettings}>Save Settings</Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-      
-      {/* Share Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+      {/* Session Name Edit Dialog */}
+      <Dialog open={showNameEditDialog} onOpenChange={setShowNameEditDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Share Session</DialogTitle>
+            <DialogTitle>Rename Session</DialogTitle>
             <DialogDescription>
-              Share this link or session code with others to invite them to your coding session.
+              Enter a new name for your collaborative session.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Session Link</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  readOnly
-                  value={`${window.location.origin}/room/${roomId}`}
-                  onClick={(e) => e.currentTarget.select()}
-                />
-                <Button variant="outline" size="sm" onClick={copySessionLink}>
-                  Copy
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Session Code</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  readOnly
-                  value={roomId || ""}
-                  onClick={(e) => e.currentTarget.select()}
-                />
-                <Button variant="outline" size="sm" onClick={onCopySessionCode}>
-                  Copy
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Others can join by entering this code on the home page.
-              </p>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="sessionName" className="text-right">
+                Session Name
+              </Label>
+              <Input
+                id="sessionName"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                className="col-span-3"
+                ref={nameInputRef}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleNameEdit();
+                  }
+                }}
+              />
             </div>
           </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleNameEdit}>Save</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 

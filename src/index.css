@@ -2,298 +2,165 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
+    --card-foreground: 0 0% 3.9%;
+ 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 3.9%;
+ 
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+ 
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+ 
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+ 
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-
-    --radius: 0.75rem;
-    
-    --code-background: 220 14% 96%;
-    --code-foreground: 222 47% 11%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+ 
+    --radius: 0.5rem;
   }
-
+ 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-
-    --secondary: 217 19% 27%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 217 19% 27%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 224 76% 48%;
-    
-    --code-background: 217 19% 27%;
-    --code-foreground: 210 40% 98%;
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+ 
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+ 
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+ 
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+ 
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+ 
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+ 
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
   }
-
+}
+ 
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground antialiased;
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+    @apply bg-background text-foreground;
   }
 }
 
-@layer components {
-  .glass-panel {
-    @apply backdrop-blur-sm bg-white/60 border border-white/20 shadow-sm;
-  }
-
-  .animate-in {
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-
-  .animate-cursor {
-    @apply absolute z-10 animate-cursor-blink bg-primary;
-    width: 2px;
-    height: 20px;
-  }
-  
-  .editor-container {
-    @apply flex flex-col h-full bg-card shadow-soft rounded-md overflow-hidden;
-  }
-  
-  .editor-header {
-    @apply flex items-center justify-between px-4 py-2 border-b bg-muted/20;
-  }
-  
-  .terminal-container {
-    @apply bg-zinc-900 text-emerald-400 font-mono text-sm p-3 h-[calc(100%-40px)] overflow-auto rounded-b-md;
-  }
-  
-  /* File tabs styling */
-  .file-tab {
-    @apply px-3 py-1.5 text-sm flex items-center gap-1.5 bg-muted/50 rounded-t-md border-r border-t border-l border-transparent transition-all duration-200;
-  }
-  
-  .file-tab-active {
-    @apply bg-background border-border border-b-transparent text-foreground font-medium;
-  }
-  
-  /* Button states */
-  .btn-hover-effect {
-    @apply transition-all duration-200 hover:shadow-md active:translate-y-0.5;
-  }
-  
-  /* Card styling */
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-card hover:translate-y-[-2px];
-  }
-  
-  /* Shimmer effect for loading states */
-  .shimmer {
-    @apply relative overflow-hidden;
-  }
-  
-  .shimmer::after {
-    @apply absolute inset-0;
-    content: "";
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transform: translateX(-100%);
-    animation: shimmer 2s infinite;
-  }
-  
-  /* Improved scrollbars */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.3);
-  }
-  
-  /* Tooltip styles */
-  .tooltip {
-    @apply invisible absolute px-2 py-1 rounded bg-black/80 text-white text-xs whitespace-nowrap opacity-0 transition-opacity;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-5px);
-    pointer-events: none;
-    z-index: 100;
-  }
-  
-  .tooltip-trigger:hover .tooltip {
-    @apply visible opacity-100;
-  }
+.terminal-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.terminal-container::-webkit-scrollbar-track {
+  background: rgb(24 24 27);
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+.terminal-container::-webkit-scrollbar-thumb {
+  background: rgb(63 63 70);
+  border-radius: 4px;
 }
 
-/* Code Editor Styles */
-.cm-editor {
-  @apply h-full font-mono text-sm outline-none rounded-md overflow-hidden;
+.terminal-container::-webkit-scrollbar-thumb:hover {
+  background: rgb(82 82 91);
 }
 
-.cm-content {
-  @apply p-4;
+/* Animations and transitions for improved UX */
+.animate-save {
+  animation: pulse 1s ease-in-out;
 }
 
-.cm-line {
-  @apply leading-relaxed;
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
 }
 
-.cm-gutters {
-  @apply bg-transparent border-r border-border/30;
+/* Improve editor styling */
+.monaco-editor .cursor {
+  transition: all 0.1s ease-out;
 }
 
-.cm-gutter {
-  @apply text-muted-foreground/50;
+/* Syntax highlighting animations */
+.monaco-editor .bracket-highlighting {
+  animation: brackethighlight 0.3s ease-in-out;
 }
 
-.cm-activeLineGutter {
-  @apply bg-muted/50 text-foreground;
+@keyframes brackethighlight {
+  0% { background-color: rgba(100, 100, 255, 0); }
+  50% { background-color: rgba(100, 100, 255, 0.2); }
+  100% { background-color: rgba(100, 100, 255, 0); }
 }
 
-.cm-activeLine {
-  @apply bg-muted/30;
+/* Smooth transitions for panel resizing */
+.ResizablePanel {
+  transition: flex-basis 0.2s ease;
 }
 
-.cm-selectionMatch {
-  @apply bg-muted/50;
+/* Toast animation improvements */
+.toast-animation-enter {
+  opacity: 0;
+  transform: translateY(1rem);
 }
 
-/* Terminal output formatting */
-.terminal-container > div {
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
+.toast-animation-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
 }
 
-.terminal-container .error {
-  color: #f56565;
+.toast-animation-exit {
+  opacity: 1;
 }
 
-.terminal-container .success {
-  color: #48bb78;
+.toast-animation-exit-active {
+  opacity: 0;
+  transition: opacity 200ms;
 }
 
-.terminal-container .warning {
-  color: #ed8936;
+/* Add autosave indicator styling */
+.autosave-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  transition: opacity 0.3s ease;
 }
 
-.terminal-container .prompt {
-  color: #90cdf4;
+.autosave-indicator.saving {
+  opacity: 1;
 }
 
-/* Tab styling for files */
-.tabs-with-border {
-  @apply border-b border-border;
-}
-
-.tab-item {
-  @apply px-4 py-2 text-sm font-medium text-muted-foreground border-b-2 border-transparent hover:text-foreground hover:border-muted-foreground/20 transition-colors;
-}
-
-.tab-item-active {
-  @apply text-foreground border-primary;
-}
-
-/* Resizable panel handle styling */
-.handle:hover {
-  @apply bg-primary/30;
-}
-
-/* Improved form controls */
-.form-input {
-  @apply rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
-}
-
-/* Improved button styles */
-.btn-primary {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
-}
-
-.btn-secondary {
-  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
-}
-
-.btn-outline {
-  @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
-}
-
-.btn-ghost {
-  @apply hover:bg-accent hover:text-accent-foreground inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+.autosave-indicator.saved {
+  opacity: 0.7;
 }

@@ -32,6 +32,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const { toast } = useToast();
   const [collaborators, setCollaborators] = useState<{id: string, name: string}[]>([]);
   const [cursorPositions, setCursorPositions] = useState<Record<string, {x: number, y: number, userName: string}>>({});
+  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Track changes with debounce for real-time updates
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -55,6 +56,24 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         }
       }
     });
+    
+    // Add editor settings to persist and improve user experience
+    editor.updateOptions({
+      fontFamily: "'Fira Code', 'Menlo', monospace",
+      fontLigatures: true,
+      cursorBlinking: "smooth",
+      cursorSmoothCaretAnimation: "on",
+      renderWhitespace: "selection",
+      scrollBeyondLastLine: false,
+      minimap: { enabled: false },
+      contextmenu: true,
+      bracketPairColorization: {
+        enabled: true
+      }
+    });
+    
+    // Focus editor
+    editor.focus();
   };
 
   // Map language to Monaco language identifier
@@ -114,6 +133,23 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       socketService.on("code-change", (data) => {
         if (data.code !== code) {
           onChange(data.code);
+          
+          // Auto-save when receiving code changes from others
+          if (saveTimeout) {
+            clearTimeout(saveTimeout);
+          }
+          
+          const timeout = setTimeout(() => {
+            if (roomId) {
+              updateRoomFiles(roomId, [{
+                name: `current-file.${language}`, 
+                language,
+                content: data.code
+              }]);
+            }
+          }, 2000);
+          
+          setSaveTimeout(timeout);
         }
       });
       
@@ -133,38 +169,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       
       return () => {
         socketService.disconnect();
+        
+        if (saveTimeout) {
+          clearTimeout(saveTimeout);
+        }
+        
+        if (debounceTimeout) {
+          clearTimeout(debounceTimeout);
+        }
       };
     }
   }, [roomId, user, toast, code, onChange]);
-
-  // Update room history with files when code changes
-  useEffect(() => {
-    if (roomId && code) {
-      // Save file updates with debounce to avoid excessive storage updates
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-      
-      const timeout = setTimeout(() => {
-        // Update room files in history
-        updateRoomFiles(roomId, [{
-          name: `current-file.${language}`,
-          language,
-          content: code,
-          lastEdited: new Date(),
-          editedBy: user?.id
-        }]);
-      }, 2000);
-      
-      setDebounceTimeout(timeout);
-    }
-    
-    return () => {
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-    };
-  }, [roomId, code, language, user?.id]);
 
   // Get appropriate language icon
   const getLanguageIcon = () => {
@@ -224,6 +239,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     lineNumbers: "on" as const,
     folding: true,
     wordWrap: "on" as const,
+    renderLineHighlight: "all" as const,
+    scrollbar: {
+      useShadows: false,
+      verticalScrollbarSize: 10,
+      horizontalScrollbarSize: 10,
+      verticalHasArrows: false,
+      horizontalHasArrows: false,
+      vertical: "auto" as const,
+      horizontal: "auto" as const
+    }
   };
 
   return (

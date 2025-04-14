@@ -9,7 +9,7 @@ import MainLayout from "@/layouts/MainLayout";
 import RoomHeader from "./components/RoomHeader";
 import PanelToggleBar from "./components/PanelToggleBar";
 import EditorPanel from "./components/EditorPanel";
-import CollaborationSidebar from "./components/CollaborationSidebar";
+import CollaborationSidebar from "@/components/CollaborationSidebar";
 import AccessRequest from "./components/AccessRequest";
 import PendingApproval from "./components/PendingApproval";
 import { CodeFile, VisiblePanels } from "./types";
@@ -31,7 +31,8 @@ const Room = () => {
     requestAccess,
     approveAccess,
     denyAccess,
-    getRoom
+    getRoom,
+    updateRoomFiles
   } = useRoomHistory();
   const [currentFile, setCurrentFile] = useState<CodeFile>({
     name: "main.js",
@@ -71,6 +72,8 @@ const Room = () => {
   const [showAccessDialog, setShowAccessDialog] = useState(false);
   const [currentRequest, setCurrentRequest] = useState<{userId: string, userName: string} | null>(null);
   const [sessionName, setSessionName] = useState<string>("Collaborative Session");
+  const [autoSave, setAutoSave] = useState<boolean>(true);
+  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!roomId) {
@@ -83,9 +86,24 @@ const Room = () => {
       const existingRoom = getRoom(roomId);
       if (existingRoom) {
         setSessionName(existingRoom.name || "Collaborative Session");
+        
+        // Load saved files if available
+        if (existingRoom.files && existingRoom.files.length > 0) {
+          setFiles(existingRoom.files);
+          const mainFile = existingRoom.files.find(f => f.name === "main.js") || existingRoom.files[0];
+          setCurrentFile(mainFile);
+          setActiveTab(mainFile.name);
+          
+          toast({
+            title: "Session Loaded",
+            description: "Your previous work has been restored.",
+          });
+          
+          setLastSavedTime(new Date());
+        }
       }
     }
-  }, [roomId, navigate, getRoom]);
+  }, [roomId, navigate, getRoom, toast]);
 
   useEffect(() => {
     if (roomId && user) {
@@ -99,6 +117,12 @@ const Room = () => {
           const updatedCurrentFile = data.files.find((f: CodeFile) => f.name === currentFile.name);
           if (updatedCurrentFile) {
             setCurrentFile(updatedCurrentFile);
+          }
+          
+          // Save files to room history on remote update
+          if (autoSave) {
+            updateRoomFiles(roomId, data.files);
+            setLastSavedTime(new Date());
           }
         }
       });
@@ -156,12 +180,25 @@ const Room = () => {
           setSessionName(data.name);
         }
       });
+      
+      // Set up auto-save interval
+      const saveInterval = setInterval(() => {
+        if (autoSave && roomId && files.length > 0) {
+          updateRoomFiles(roomId, files);
+          setLastSavedTime(new Date());
+        }
+      }, 30000); // Auto-save every 30 seconds
+      
+      return () => {
+        socketService.disconnect();
+        clearInterval(saveInterval);
+      };
     }
     
     return () => {
       socketService.disconnect();
     };
-  }, [roomId, addRoom, user, files, currentFile.name, isRoomOwner]);
+  }, [roomId, addRoom, user, files, currentFile.name, isRoomOwner, updateRoomFiles, autoSave]);
 
   const handleCodeChange = (newCode: string) => {
     setCurrentFile({
@@ -179,6 +216,38 @@ const Room = () => {
     
     if (roomId) {
       socketService.emit("file-update", { files: updatedFiles, roomId });
+      
+      // Save to room history on local changes with debounce
+      if (autoSave) {
+        const now = new Date();
+        const timeSinceLastSave = lastSavedTime ? now.getTime() - lastSavedTime.getTime() : 60000;
+        
+        // If it's been more than 5 seconds since the last save, save now
+        if (timeSinceLastSave > 5000) {
+          updateRoomFiles(roomId, updatedFiles);
+          setLastSavedTime(now);
+          
+          // Show subtle toast every 5 minutes or on first save
+          if (!lastSavedTime || timeSinceLastSave > 300000) {
+            toast({
+              title: "Changes Saved",
+              description: "All your changes have been automatically saved.",
+            });
+          }
+        }
+      }
+    }
+  };
+
+  const handleManualSave = () => {
+    if (roomId) {
+      updateRoomFiles(roomId, files);
+      setLastSavedTime(new Date());
+      
+      toast({
+        title: "Session Saved",
+        description: "Your work has been saved successfully.",
+      });
     }
   };
 
@@ -282,6 +351,10 @@ const Room = () => {
     
     if (roomId) {
       socketService.emit("file-update", { files: updatedFiles, roomId });
+      
+      // Save to room history on file creation
+      updateRoomFiles(roomId, updatedFiles);
+      setLastSavedTime(new Date());
     }
     
     toast({
@@ -321,6 +394,21 @@ const Room = () => {
     }
   };
 
+  const toggleAutoSave = () => {
+    setAutoSave(!autoSave);
+    
+    toast({
+      title: autoSave ? "Auto-Save Disabled" : "Auto-Save Enabled",
+      description: autoSave ? "You'll need to save manually" : "Changes will be saved automatically",
+    });
+    
+    // If enabling auto-save, save immediately
+    if (!autoSave && roomId) {
+      updateRoomFiles(roomId, files);
+      setLastSavedTime(new Date());
+    }
+  };
+
   const copySessionCode = () => {
     if (roomId) {
       navigator.clipboard.writeText(roomId);
@@ -352,6 +440,10 @@ const Room = () => {
           onUpdateSessionName={handleUpdateSessionName}
           isOwner={roomId ? isRoomOwner(roomId) : true}
           onCopySessionCode={copySessionCode}
+          onSaveSession={handleManualSave}
+          autoSave={autoSave}
+          onToggleAutoSave={toggleAutoSave}
+          lastSavedTime={lastSavedTime}
         />
 
         <PanelToggleBar 

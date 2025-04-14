@@ -1,11 +1,4 @@
 
-export interface CodeFile {
-  name: string;
-  language: string;
-  content: string;
-  path?: string;
-}
-
 export interface VisiblePanels {
   editor: boolean;
   terminal: boolean;
@@ -13,17 +6,16 @@ export interface VisiblePanels {
   collaboration: boolean;
 }
 
-export interface GitHubRepo {
-  owner: string;
-  repo: string;
-  branch?: string;
-  path?: string;
+export interface CodeFile {
+  name: string;
+  language: string;
+  content: string;
+  lastEdited?: Date;
+  editedBy?: string;
 }
 
-export interface RoomSettings {
-  name: string;
-  description?: string;
-  isPrivate: boolean;
-  requireApproval: boolean;
-  gitHubRepo?: GitHubRepo;
+export interface AutoSaveConfig {
+  enabled: boolean;
+  interval: number; // in milliseconds
+  lastSaved?: Date;
 }
