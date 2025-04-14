@@ -95,6 +95,9 @@ export default {
 				'cursor-blink': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0' }
+				},
+				'shimmer': {
+					'100%': { transform: 'translateX(100%)' }
 				}
 			},
 			animation: {
@@ -105,7 +108,12 @@ export default {
 				'slide-in': 'slide-in 0.3s ease-out',
 				'slide-out': 'slide-out 0.3s ease-out',
 				'pulse-soft': 'pulse-soft 2s infinite ease-in-out',
-				'cursor-blink': 'cursor-blink 1s infinite'
+				'cursor-blink': 'cursor-blink 1s infinite',
+				'shimmer': 'shimmer 2s infinite'
+			},
+			boxShadow: {
+				'soft': '0 2px 10px rgba(0, 0, 0, 0.05)',
+				'card': '0 4px 20px rgba(0, 0, 0, 0.08)'
 			}
 		}
 	},

@@ -38,19 +38,19 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
   
   return (
     <>
-      <ResizableHandle withHandle />
-      <ResizablePanel defaultSize={30} minSize={20}>
+      <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
+      <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm">
         <ResizablePanelGroup direction="vertical">
           {visiblePanels.videos && (
             <>
-              <ResizablePanel defaultSize={40} minSize={15}>
+              <ResizablePanel defaultSize={40} minSize={15} className="bg-card border-b border-border/50">
                 <VideoCall 
                   roomId={roomId} 
                   onChatToggle={toggleChat} 
                   isChatOpen={isChatOpen} 
                 />
               </ResizablePanel>
-              <ResizableHandle withHandle />
+              <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
             </>
           )}
           

@@ -14,50 +14,50 @@ const PanelToggleBar: React.FC<PanelToggleBarProps> = ({
   togglePanelVisibility
 }) => {
   return (
-    <div className="flex items-center gap-4 mb-4 border rounded-md p-2 bg-muted/30">
-      <div className="text-sm font-medium">Show panels:</div>
-      <div className="flex items-center gap-6">
-        <div className="flex items-center space-x-2">
+    <div className="flex flex-wrap items-center gap-4 mb-4 border rounded-md p-3 bg-card shadow-sm">
+      <div className="text-sm font-medium text-muted-foreground">Workspace Panels:</div>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center space-x-2 bg-muted/30 px-3 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
           <Switch 
             id="editor" 
             checked={visiblePanels.editor} 
             onCheckedChange={() => togglePanelVisibility('editor')}
           />
-          <Label htmlFor="editor" className="flex items-center text-sm">
-            <Code className="h-3.5 w-3.5 mr-1.5" />
+          <Label htmlFor="editor" className="flex items-center text-sm cursor-pointer">
+            <Code className="h-3.5 w-3.5 mr-1.5 text-primary/80" />
             Editor
           </Label>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 bg-muted/30 px-3 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
           <Switch 
             id="terminal" 
             checked={visiblePanels.terminal} 
             onCheckedChange={() => togglePanelVisibility('terminal')}
           />
-          <Label htmlFor="terminal" className="flex items-center text-sm">
-            <Terminal className="h-3.5 w-3.5 mr-1.5" />
+          <Label htmlFor="terminal" className="flex items-center text-sm cursor-pointer">
+            <Terminal className="h-3.5 w-3.5 mr-1.5 text-primary/80" />
             Terminal
           </Label>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 bg-muted/30 px-3 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
           <Switch 
             id="videos" 
             checked={visiblePanels.videos} 
             onCheckedChange={() => togglePanelVisibility('videos')}
           />
-          <Label htmlFor="videos" className="flex items-center text-sm">
-            <Video className="h-3.5 w-3.5 mr-1.5" />
+          <Label htmlFor="videos" className="flex items-center text-sm cursor-pointer">
+            <Video className="h-3.5 w-3.5 mr-1.5 text-primary/80" />
             Video
           </Label>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 bg-muted/30 px-3 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
           <Switch 
             id="collaboration" 
             checked={visiblePanels.collaboration} 
             onCheckedChange={() => togglePanelVisibility('collaboration')}
           />
-          <Label htmlFor="collaboration" className="flex items-center text-sm">
-            <Users className="h-3.5 w-3.5 mr-1.5" />
+          <Label htmlFor="collaboration" className="flex items-center text-sm cursor-pointer">
+            <Users className="h-3.5 w-3.5 mr-1.5 text-primary/80" />
             Collaboration
           </Label>
         </div>
