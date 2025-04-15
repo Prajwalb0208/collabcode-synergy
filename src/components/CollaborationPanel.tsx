@@ -20,6 +20,8 @@ import { Label } from "@/components/ui/label";
 interface CollaborationPanelProps {
   isOwner?: boolean;
   roomId: string;
+  isChatOpen?: boolean;
+  toggleChat?: () => void;
   files?: CodeFile[];
   accessRequests?: {userId: string, userName: string}[];
   onApproveAccess?: (userId: string) => void;
@@ -29,13 +31,14 @@ interface CollaborationPanelProps {
 const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   isOwner = false,
   roomId,
+  isChatOpen = false,
+  toggleChat,
   files = [],
   accessRequests = [],
   onApproveAccess,
   onDenyAccess
 }) => {
   const [activeTab, setActiveTab] = useState("collaborators");
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [githubRepo, setGithubRepo] = useState("");
   const [commitMessage, setCommitMessage] = useState("");
   const [showCommitDialog, setShowCommitDialog] = useState(false);
@@ -119,8 +122,10 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     }
   };
 
-  const toggleChat = () => {
-    setIsChatOpen(!isChatOpen);
+  const handleToggleChat = () => {
+    if (toggleChat) {
+      toggleChat();
+    }
   };
 
   const handleCopyRoomId = () => {
@@ -167,6 +172,11 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
         description: "Your changes have been committed and pushed to GitHub",
       });
     }, 2000);
+  };
+
+  const handleFileClick = (file: CodeFile) => {
+    // Emit the file selected event through socket
+    socketService.emit("file-selected", { fileName: file.name, roomId });
   };
 
   return (
@@ -264,7 +274,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleChat}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleToggleChat}>
                     <MessageSquare className="h-4 w-4" />
                   </Button>
                 </div>
@@ -281,7 +291,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
           </TabsContent>
           
           <TabsContent value="files" className="flex-1 overflow-hidden data-[state=active]:h-full">
-            <FileExplorer files={files} />
+            <FileExplorer files={files} onFileSelect={handleFileClick} />
           </TabsContent>
           
           <TabsContent value="git" className="p-4 data-[state=active]:h-full overflow-auto">
@@ -370,7 +380,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
           absolute inset-y-0 right-0 w-80 bg-background border-l shadow-lg transform transition-transform duration-300 z-10
           ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
         `}>
-          <Chat onClose={toggleChat} />
+          <Chat onClose={handleToggleChat} />
         </div>
       </CardContent>
       

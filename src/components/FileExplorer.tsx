@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FolderOpen, FolderClosed, FileText, FileCode, ChevronRight, ChevronDown, FilePlus, FolderPlus } from "lucide-react";
@@ -38,13 +37,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   const [newFolderName, setNewFolderName] = useState("");
   const { toast } = useToast();
 
-  // Convert flat files to tree structure
   useEffect(() => {
     if (files && files.length > 0) {
-      // Group files into folders based on path
       const rootFolder: FileNode[] = [];
       
-      // Add all files to the root directory for now
       files.forEach((file, index) => {
         rootFolder.push({
           id: `file-${index}`,
@@ -57,7 +53,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       
       setFileTree(rootFolder);
     } else {
-      // Default demo file tree when no files are provided
       setFileTree([
         {
           id: "1",
@@ -150,6 +145,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       const selectedFile = files.find(f => f.name === node.name);
       if (selectedFile) {
         onFileSelect(selectedFile);
+      } else if (node.type === "folder") {
+        toggleFolder(node.id);
       }
     }
   };
@@ -235,7 +232,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             { "text-sm": level === 0, "text-xs": level > 0 }
           )}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
-          onClick={() => node.type === "folder" ? toggleFolder(node.id) : handleFileNodeClick(node)}
+          onClick={() => handleFileNodeClick(node)}
         >
           {node.type === "folder" && (
             node.expanded ? 
