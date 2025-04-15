@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { ShieldAlert } from "lucide-react";
 import MainLayout from "@/layouts/MainLayout";
 
-const PendingApproval: React.FC = () => {
+interface PendingApprovalProps {
+  autoJoined?: boolean;
+}
+
+const PendingApproval: React.FC<PendingApprovalProps> = ({ autoJoined = false }) => {
   return (
     <MainLayout>
       <div className="container py-12">
@@ -18,7 +22,9 @@ const PendingApproval: React.FC = () => {
               <ShieldAlert className="h-4 w-4" />
               <AlertTitle>Access Pending</AlertTitle>
               <AlertDescription>
-                Your request to join this room is waiting for approval from the room owner.
+                {autoJoined 
+                  ? "You've been automatically added to the waiting room. The host will approve your request to join the session shortly."
+                  : "Your request to join this room is waiting for approval from the room owner."}
               </AlertDescription>
             </Alert>
             <Button 

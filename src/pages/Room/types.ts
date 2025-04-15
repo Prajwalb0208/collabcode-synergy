@@ -27,3 +27,16 @@ export interface GitHubRepo {
   branch?: string;
   path?: string;
 }
+
+export interface DeploymentConfig {
+  frontend: {
+    path: string;
+    buildCommand: string;
+    outputDir: string;
+  };
+  backend: {
+    path: string;
+    buildCommand: string;
+    entry: string;
+  };
+}

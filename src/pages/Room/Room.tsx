@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
@@ -22,6 +21,7 @@ import { generateRoomId } from "@/lib/utils";
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { 
     addRoom, 
@@ -74,6 +74,7 @@ const Room = () => {
   const [sessionName, setSessionName] = useState<string>("Collaborative Session");
   const [autoSave, setAutoSave] = useState<boolean>(true);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+  const [isAutoJoining, setIsAutoJoining] = useState(false);
 
   useEffect(() => {
     if (!roomId) {
@@ -82,12 +83,18 @@ const Room = () => {
     } else {
       document.title = `Room: ${roomId} | CollabCode`;
       
-      // Load session name if available
+      const queryParams = new URLSearchParams(location.search);
+      const directJoin = queryParams.get('join') === 'true';
+      
+      if (directJoin && user && !isRoomOwner(roomId) && !isParticipant(roomId) && !isPendingApproval(roomId)) {
+        setIsAutoJoining(true);
+        handleRequestAccess();
+      }
+      
       const existingRoom = getRoom(roomId);
       if (existingRoom) {
         setSessionName(existingRoom.name || "Collaborative Session");
         
-        // Load saved files if available
         if (existingRoom.files && existingRoom.files.length > 0) {
           setFiles(existingRoom.files);
           const mainFile = existingRoom.files.find(f => f.name === "main.js") || existingRoom.files[0];
@@ -103,7 +110,7 @@ const Room = () => {
         }
       }
     }
-  }, [roomId, navigate, getRoom, toast]);
+  }, [roomId, navigate, getRoom, toast, user, location, isRoomOwner, isParticipant, isPendingApproval]);
 
   useEffect(() => {
     if (roomId && user) {
@@ -119,7 +126,6 @@ const Room = () => {
             setCurrentFile(updatedCurrentFile);
           }
           
-          // Save files to room history on remote update
           if (autoSave) {
             updateRoomFiles(roomId, data.files);
             setLastSavedTime(new Date());
@@ -181,13 +187,12 @@ const Room = () => {
         }
       });
       
-      // Set up auto-save interval
       const saveInterval = setInterval(() => {
         if (autoSave && roomId && files.length > 0) {
           updateRoomFiles(roomId, files);
           setLastSavedTime(new Date());
         }
-      }, 30000); // Auto-save every 30 seconds
+      }, 30000);
       
       return () => {
         socketService.disconnect();
@@ -217,17 +222,14 @@ const Room = () => {
     if (roomId) {
       socketService.emit("file-update", { files: updatedFiles, roomId });
       
-      // Save to room history on local changes with debounce
       if (autoSave) {
         const now = new Date();
         const timeSinceLastSave = lastSavedTime ? now.getTime() - lastSavedTime.getTime() : 60000;
         
-        // If it's been more than 5 seconds since the last save, save now
         if (timeSinceLastSave > 5000) {
           updateRoomFiles(roomId, updatedFiles);
           setLastSavedTime(now);
           
-          // Show subtle toast every 5 minutes or on first save
           if (!lastSavedTime || timeSinceLastSave > 300000) {
             toast({
               title: "Changes Saved",
@@ -352,7 +354,6 @@ const Room = () => {
     if (roomId) {
       socketService.emit("file-update", { files: updatedFiles, roomId });
       
-      // Save to room history on file creation
       updateRoomFiles(roomId, updatedFiles);
       setLastSavedTime(new Date());
     }
@@ -402,7 +403,6 @@ const Room = () => {
       description: autoSave ? "You'll need to save manually" : "Changes will be saved automatically",
     });
     
-    // If enabling auto-save, save immediately
     if (!autoSave && roomId) {
       updateRoomFiles(roomId, files);
       setLastSavedTime(new Date());
@@ -422,6 +422,10 @@ const Room = () => {
   if (roomId && user && !isRoomOwner(roomId) && !isParticipant(roomId)) {
     if (isPendingApproval(roomId)) {
       return <PendingApproval />;
+    }
+    
+    if (isAutoJoining) {
+      return <PendingApproval autoJoined={true} />;
     }
     
     return <AccessRequest roomId={roomId} onRequestAccess={handleRequestAccess} />;

@@ -13,9 +13,10 @@ class SocketService {
       this.disconnect();
     }
 
-    // In a real app, this would connect to your actual socket server
-    // Using a mock implementation that simulates socket events
-    this.socket = io("https://api.collabcode.app", {
+    // Get backend URL from environment or use fallback
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+    
+    this.socket = io(backendUrl, {
       query: {
         roomId,
         userId,
@@ -31,6 +32,8 @@ class SocketService {
 
     this.socket.on("connect", () => {
       console.log("Socket connected");
+      // Join the room
+      this.socket.emit("join-room", { roomId, userId, userName, userAvatar });
       // Announce user joined
       this.emit("user-joined", { roomId, userId, userName, userAvatar });
     });
