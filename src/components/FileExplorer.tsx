@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FolderOpen, FolderClosed, FileText, FileCode, ChevronRight, ChevronDown, FilePlus, FolderPlus } from "lucide-react";
@@ -145,9 +146,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       const selectedFile = files.find(f => f.name === node.name);
       if (selectedFile) {
         onFileSelect(selectedFile);
-      } else if (node.type === "folder") {
-        toggleFolder(node.id);
-      }
+      } 
+    } else if (node.type === "folder") {
+      toggleFolder(node.id);
     }
   };
 
