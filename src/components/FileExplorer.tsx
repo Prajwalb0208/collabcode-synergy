@@ -1,7 +1,17 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FolderOpen, FolderClosed, FileText, FileCode, ChevronRight, ChevronDown, FilePlus, FolderPlus } from "lucide-react";
+import { 
+  FolderOpen, 
+  FolderClosed, 
+  FileText, 
+  FileCode, 
+  ChevronRight, 
+  ChevronDown, 
+  FilePlus, 
+  FolderPlus,
+  Move
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CodeFile } from "@/pages/Room/types";
 import { Input } from "@/components/ui/input";
@@ -16,26 +26,32 @@ interface FileNode {
   language?: string;
   expanded?: boolean;
   content?: string;
+  parentId?: string;
 }
 
 interface FileExplorerProps {
   files?: CodeFile[];
   onFileSelect?: (file: CodeFile) => void;
-  onCreateFile?: (fileName: string, language: string, content?: string) => void;
-  onCreateFolder?: (folderName: string) => void;
+  onCreateFile?: (fileName: string, language: string, folderId?: string, content?: string) => void;
+  onCreateFolder?: (folderName: string, parentId?: string) => void;
+  onMoveFile?: (fileId: string, targetFolderId: string) => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({ 
   files, 
   onFileSelect,
   onCreateFile,
-  onCreateFolder
+  onCreateFolder,
+  onMoveFile
 }) => {
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
+  const [selectedNode, setSelectedNode] = useState<FileNode | null>(null);
+  const [draggedNode, setDraggedNode] = useState<FileNode | null>(null);
+  const [dropTargetNode, setDropTargetNode] = useState<FileNode | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,23 +82,25 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
               name: "components",
               type: "folder",
               expanded: true,
+              parentId: "1",
               children: [
-                { id: "3", name: "Button.tsx", type: "file", language: "typescript" },
-                { id: "4", name: "Card.tsx", type: "file", language: "typescript" },
-                { id: "5", name: "Input.tsx", type: "file", language: "typescript" },
+                { id: "3", name: "Button.tsx", type: "file", language: "typescript", parentId: "2" },
+                { id: "4", name: "Card.tsx", type: "file", language: "typescript", parentId: "2" },
+                { id: "5", name: "Input.tsx", type: "file", language: "typescript", parentId: "2" },
               ]
             },
             {
               id: "6",
               name: "pages",
               type: "folder",
+              parentId: "1",
               children: [
-                { id: "7", name: "Home.tsx", type: "file", language: "typescript" },
-                { id: "8", name: "About.tsx", type: "file", language: "typescript" },
+                { id: "7", name: "Home.tsx", type: "file", language: "typescript", parentId: "6" },
+                { id: "8", name: "About.tsx", type: "file", language: "typescript", parentId: "6" },
               ]
             },
-            { id: "9", name: "App.tsx", type: "file", language: "typescript" },
-            { id: "10", name: "main.tsx", type: "file", language: "typescript" },
+            { id: "9", name: "App.tsx", type: "file", language: "typescript", parentId: "1" },
+            { id: "10", name: "main.tsx", type: "file", language: "typescript", parentId: "1" },
           ]
         },
         {
@@ -90,8 +108,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           name: "public",
           type: "folder",
           children: [
-            { id: "12", name: "index.html", type: "file", language: "html" },
-            { id: "13", name: "favicon.ico", type: "file" },
+            { id: "12", name: "index.html", type: "file", language: "html", parentId: "11" },
+            { id: "13", name: "favicon.ico", type: "file", parentId: "11" },
           ]
         },
         { id: "14", name: "package.json", type: "file", language: "json" },
@@ -142,6 +160,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   };
 
   const handleFileNodeClick = (node: FileNode) => {
+    setSelectedNode(node);
+
     if (node.type === "file" && onFileSelect && files) {
       const selectedFile = files.find(f => f.name === node.name);
       if (selectedFile) {
@@ -152,14 +172,29 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     }
   };
 
-  const handleCreateFile = () => {
+  const handleCreateFile = (folderId?: string) => {
+    setSelectedNode(folderId ? findNodeById(folderId, fileTree) : null);
     setIsCreatingFile(true);
     setIsCreatingFolder(false);
   };
 
-  const handleCreateFolder = () => {
+  const handleCreateFolder = (parentId?: string) => {
+    setSelectedNode(parentId ? findNodeById(parentId, fileTree) : null);
     setIsCreatingFolder(true);
     setIsCreatingFile(false);
+  };
+
+  const findNodeById = (id: string, nodes: FileNode[]): FileNode | null => {
+    for (const node of nodes) {
+      if (node.id === id) {
+        return node;
+      }
+      if (node.children) {
+        const found = findNodeById(id, node.children);
+        if (found) return found;
+      }
+    }
+    return null;
   };
 
   const submitNewFile = () => {
@@ -182,12 +217,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       else if (extension === 'ts' || extension === 'tsx') language = 'typescript';
       else if (extension === 'md') language = 'markdown';
       
-      onCreateFile(newFileName, language);
+      onCreateFile(newFileName, language, selectedNode?.id);
       setNewFileName("");
       setIsCreatingFile(false);
       toast({
         title: "Success",
-        description: `Created new file: ${newFileName}`
+        description: `Created new file: ${newFileName} ${selectedNode ? 'in ' + selectedNode.name : ''}`
       });
     } else {
       toast({
@@ -208,12 +243,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     }
 
     if (onCreateFolder) {
-      onCreateFolder(newFolderName);
+      onCreateFolder(newFolderName, selectedNode?.id);
       setNewFolderName("");
       setIsCreatingFolder(false);
       toast({
         title: "Success",
-        description: `Created new folder: ${newFolderName}`
+        description: `Created new folder: ${newFolderName} ${selectedNode ? 'in ' + selectedNode.name : ''}`
       });
     } else {
       toast({
@@ -223,6 +258,44 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, node: FileNode) => {
+    setDraggedNode(node);
+    e.dataTransfer.setData('text/plain', node.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, node: FileNode) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (draggedNode && node.type === 'folder' && node.id !== draggedNode.id) {
+      setDropTargetNode(node);
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDropTargetNode(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetNode: FileNode) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (draggedNode && targetNode.type === 'folder' && targetNode.id !== draggedNode.id) {
+      if (onMoveFile && draggedNode.type === 'file') {
+        onMoveFile(draggedNode.id, targetNode.id);
+        toast({
+          title: "Success",
+          description: `Moved ${draggedNode.name} to ${targetNode.name}`
+        });
+      }
+    }
+    
+    setDraggedNode(null);
+    setDropTargetNode(null);
+  };
+
   const renderTree = (nodes: FileNode[], level = 0) => {
     return nodes.map(node => (
       <div key={node.id} className="file-tree-item">
@@ -230,10 +303,20 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           className={cn(
             "flex items-center py-1 px-2 rounded-md hover:bg-muted/70 cursor-pointer select-none",
             "transition-colors duration-100",
-            { "text-sm": level === 0, "text-xs": level > 0 }
+            { 
+              "text-sm": level === 0, 
+              "text-xs": level > 0,
+              "bg-muted/50": selectedNode?.id === node.id,
+              "border border-blue-400/50": dropTargetNode?.id === node.id
+            }
           )}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
           onClick={() => handleFileNodeClick(node)}
+          draggable={true}
+          onDragStart={(e) => handleDragStart(e, node)}
+          onDragOver={(e) => handleDragOver(e, node)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, node)}
         >
           {node.type === "folder" && (
             node.expanded ? 
@@ -243,6 +326,43 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           {node.type === "file" && <span className="w-3.5 mr-1"></span>}
           {getFileIcon(node)}
           <span className="ml-1.5 truncate">{node.name}</span>
+          
+          {/* Context menu buttons on hover */}
+          {node.type === "folder" && (
+            <div className="ml-auto hidden group-hover:flex gap-1">
+              <button 
+                className="p-1 rounded hover:bg-muted"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCreateFile(node.id);
+                }}
+                title="New File"
+              >
+                <FilePlus className="h-3 w-3" />
+              </button>
+              <button 
+                className="p-1 rounded hover:bg-muted"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCreateFolder(node.id);
+                }}
+                title="New Subfolder"
+              >
+                <FolderPlus className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          
+          {node.type === "file" && (
+            <div className="ml-auto opacity-0 group-hover:opacity-100 flex gap-1">
+              <button 
+                className="p-1 rounded hover:bg-muted"
+                title="Move File"
+              >
+                <Move className="h-3 w-3" />
+              </button>
+            </div>
+          )}
         </div>
         
         {node.type === "folder" && node.expanded && node.children && (
@@ -262,14 +382,14 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           <button 
             className="p-1 rounded hover:bg-muted"
             title="New File"
-            onClick={handleCreateFile}
+            onClick={() => handleCreateFile()}
           >
             <FilePlus className="h-3.5 w-3.5" />
           </button>
           <button 
             className="p-1 rounded hover:bg-muted"
             title="New Folder"
-            onClick={handleCreateFolder}
+            onClick={() => handleCreateFolder()}
           >
             <FolderPlus className="h-3.5 w-3.5" />
           </button>

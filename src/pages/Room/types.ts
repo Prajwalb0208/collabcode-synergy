@@ -3,6 +3,8 @@ export interface CodeFile {
   name: string;
   language: string;
   content: string;
+  path?: string;
+  folderId?: string;
 }
 
 export interface VisiblePanels {
@@ -40,4 +42,18 @@ export interface GitHubRepo {
   repo: string;
   branch?: string;
   path?: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  parentId?: string;
+  children?: (Folder | FileReference)[];
+}
+
+export interface FileReference {
+  id: string;
+  name: string;
+  fileId: string;
+  parentId?: string;
 }

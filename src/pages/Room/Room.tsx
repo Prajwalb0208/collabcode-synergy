@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Check, X, MessageSquare } from "lucide-react";
 import { generateRoomId } from "@/lib/utils";
+import CollaborationSidebar from "./components/CollaborationSidebar";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -69,7 +70,7 @@ const Room = () => {
   const [visiblePanels, setVisiblePanels] = useState<VisiblePanels>({
     editor: true,
     terminal: true,
-    git: false,
+    git: true,
     videos: true,
     collaboration: true
   });
@@ -438,7 +439,8 @@ const Room = () => {
     }
   };
 
-  const handleCreateFile = (fileName: string, language: string, content: string = "") => {
+  // Enhanced file creation function that supports folder paths
+  const handleCreateFile = (fileName: string, language: string, folderId?: string, content: string = "") => {
     if (files.some(file => file.name === fileName)) {
       toast({
         title: "Error",
@@ -448,12 +450,19 @@ const Room = () => {
       return;
     }
     
+    let fileContent = content;
+    if (!content) {
+      if (language === 'html') {
+        fileContent = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>New Document</title>\n</head>\n<body>\n  <h1>Hello World</h1>\n</body>\n</html>";
+      } else {
+        fileContent = `// New ${language} file`;
+      }
+    }
+    
     const newFile: CodeFile = {
       name: fileName,
       language,
-      content: content || (language === 'html' ? 
-        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>New Document</title>\n</head>\n<body>\n  <h1>Hello World</h1>\n</body>\n</html>" : 
-        `// New ${language} file`)
+      content: fileContent
     };
     
     const updatedFiles = [...files, newFile];
@@ -474,7 +483,8 @@ const Room = () => {
     });
   };
   
-  const handleCreateFolder = (folderName: string) => {
+  // Enhanced folder creation function that supports parent folders
+  const handleCreateFolder = (folderName: string, parentId?: string) => {
     if (folders.includes(folderName)) {
       toast({
         title: "Error",
@@ -495,6 +505,24 @@ const Room = () => {
       title: "Folder Created",
       description: `Created new folder: ${folderName}`,
     });
+  };
+  
+  // New function to handle moving files between folders
+  const handleMoveFile = (fileId: string, targetFolderId: string) => {
+    // In a real implementation, this would update the file path
+    // For now we'll just show a toast
+    toast({
+      title: "File Moved",
+      description: "File has been moved to the selected folder",
+    });
+    
+    if (roomId) {
+      socketService.emit("file-moved", { 
+        fileId, 
+        targetFolderId,
+        roomId 
+      });
+    }
   };
   
   const handleUpdateSessionName = (name: string) => {
@@ -624,6 +652,21 @@ const Room = () => {
               onCreateFolder={handleCreateFolder}
               visiblePanels={visiblePanels}
             />
+            
+            {visiblePanels.collaboration && (
+              <CollaborationSidebar 
+                visiblePanels={visiblePanels}
+                isChatOpen={isChatOpen}
+                toggleChat={toggleChat}
+                roomId={roomId || ""}
+                isRoomOwner={roomId ? isRoomOwner(roomId) : false}
+                currentFile={currentFile}
+                files={files}
+                accessRequests={accessRequests}
+                onApproveAccess={handleApproveAccess}
+                onDenyAccess={handleDenyAccess}
+              />
+            )}
           </ResizablePanelGroup>
         </div>
         

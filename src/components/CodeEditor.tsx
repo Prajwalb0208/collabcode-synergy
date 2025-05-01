@@ -95,25 +95,27 @@ const CodeEditor = ({
   };
   
   return (
-    <Editor
-      height="100%"
-      defaultValue={code}
-      value={code}
-      language={getLanguageForMonaco(language)}
-      onChange={(value) => onChange(value || '')}
-      onMount={handleEditorDidMount}
-      options={{
-        theme: 'vs-dark',
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
-        fontSize: 14,
-        lineHeight: 20,
-        fontWeight: '400',
-        readOnly
-      }}
-      className="editor-container"
-    />
+    <div className="w-full h-full">
+      <Editor
+        height="100%"
+        defaultValue={code}
+        value={code}
+        language={getLanguageForMonaco(language)}
+        onChange={(value) => onChange(value || '')}
+        onMount={handleEditorDidMount}
+        options={{
+          theme: 'vs-dark',
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
+          fontSize: 14,
+          lineHeight: 20,
+          fontWeight: '400',
+          readOnly: false // Always allow editing
+        }}
+        className="editor-container"
+      />
+    </div>
   );
 };
 
