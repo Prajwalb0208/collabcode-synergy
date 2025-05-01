@@ -54,6 +54,12 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   onRenameFile,
   onCursorPositionChange
 }) => {
+  const ensuredCurrentFile = {
+    name: currentFile?.name || "main.js",
+    language: currentFile?.language || "javascript",
+    content: currentFile?.content || ""
+  };
+
   return (
     <div className="h-full flex flex-col">
       <EditorTabBar 
@@ -73,9 +79,9 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
         <ResizablePanel defaultSize={70} minSize={30} className="relative flex-grow">
           <div className="h-full">
             <CodeEditor 
-              code={currentFile.content || ""}
+              code={ensuredCurrentFile.content}
               onChange={handleCodeChange}
-              language={currentFile.language || "javascript"}
+              language={ensuredCurrentFile.language}
               readOnly={false} // Force editor to be editable
               onCursorPositionChange={onCursorPositionChange}
             />

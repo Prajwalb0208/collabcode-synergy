@@ -56,7 +56,7 @@ const CodeEditor = ({
         horizontalScrollbarSize: 10,
         alwaysConsumeMouseWheel: false
       },
-      readOnly: false, // Ensure the editor is always editable
+      readOnly: false, // Always make editor editable
     });
 
     // Focus editor
