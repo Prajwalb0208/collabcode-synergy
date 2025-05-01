@@ -1,3 +1,4 @@
+
 import React from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import PanelToggleBar from "./components/PanelToggleBar";
@@ -101,6 +102,9 @@ const RoomContent: React.FC<RoomContentProps> = ({
 }) => {
   const isMobile = useIsMobile();
 
+  // Add console log to debug editable prop
+  console.log("Room rendering, editable always set to true");
+
   return (
     <div className="h-[calc(100vh-5rem)] w-screen max-w-full">
       <RoomHeader 
@@ -166,7 +170,7 @@ const RoomContent: React.FC<RoomContentProps> = ({
                 onRenameFile={handleRenameFile}
                 showFileExplorer={false}
                 onCursorPositionChange={handleCursorPositionChange}
-                editable={true} // Always set to true to ensure files are editable
+                editable={true} // Always force this to true to ensure files are editable
               />
               <LiveCursors 
                 containerRef={editorContainerRef} 

@@ -56,7 +56,7 @@ const CodeEditor = ({
         horizontalScrollbarSize: 10,
         alwaysConsumeMouseWheel: false
       },
-      readOnly: readOnly
+      readOnly: false // Force readOnly to always be false to ensure editing is always enabled
     });
 
     // Focus editor
@@ -108,7 +108,7 @@ const CodeEditor = ({
           fontSize: 14,
           lineHeight: 20,
           fontWeight: '400',
-          readOnly: readOnly
+          readOnly: false // Force readOnly to always be false to ensure editing is always enabled
         }}
         className="editor-container"
       />

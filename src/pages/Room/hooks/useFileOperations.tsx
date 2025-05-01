@@ -23,11 +23,20 @@ export function useFileOperations({
   const handleCodeChange = useCallback((newCode: string) => {
     if (!currentFile) return;
     
+    console.log("File content updated:", newCode.substring(0, 50) + "...");
+    
     // Update the current file content
-    setCurrentFile(prev => ({
-      ...prev,
-      content: newCode
-    }));
+    setCurrentFile(prev => {
+      if (!prev) return {
+        name: "main.js",
+        language: "javascript",
+        content: newCode
+      };
+      return {
+        ...prev,
+        content: newCode
+      };
+    });
     
     // Update the file in the files array
     const updatedFiles = files.map(file => 
