@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -70,7 +69,9 @@ const Room = () => {
   const [visiblePanels, setVisiblePanels] = useState<VisiblePanels>({
     editor: true,
     terminal: true,
-    git: false
+    git: false,
+    videos: true,
+    collaboration: true
   });
   
   const [showFileExplorer, setShowFileExplorer] = useState(!isMobile);
@@ -659,7 +660,7 @@ const Room = () => {
             <div className="p-3 border-b bg-muted/40 flex items-center justify-between">
               <h3 className="font-medium">Chat</h3>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={toggleChat}>
-                <X className="h-4 w-4" />
+                <X className="mr-2 h-4 w-4" />
               </Button>
             </div>
             <div className="flex-1 overflow-hidden">
