@@ -27,7 +27,11 @@ This project is separated into frontend and backend components for deployment.
    cp .env.example .env
    ```
 
-4. Update environment variables in .env with your production settings.
+4. Update environment variables in .env with your production settings:
+   ```
+   PORT=3000
+   FRONTEND_URL=https://your-frontend-domain.com
+   ```
 
 5. Start the server:
    ```
@@ -42,12 +46,15 @@ pm2 start index.js --name collabcode-backend
 
 ### Frontend
 
-1. Create .env file from example:
+1. In the frontend directory, create .env file from example:
    ```
    cp .env.example .env
    ```
 
-2. Update VITE_BACKEND_URL to point to your backend server.
+2. Update environment variables:
+   ```
+   VITE_BACKEND_URL=https://your-backend-domain.com
+   ```
 
 3. Build the frontend:
    ```
@@ -77,7 +84,7 @@ You can use Docker to containerize both frontend and backend:
 3. Run the containers:
    ```
    docker run -d -p 3000:3000 --env-file backend/.env collabcode-backend
-   docker run -d -p 5173:80 --env-file .env collabcode-frontend
+   docker run -d -p 5173:80 --env-file frontend/.env collabcode-frontend
    ```
 
 ## Deployment Platforms
