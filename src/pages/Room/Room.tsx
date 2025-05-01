@@ -20,7 +20,8 @@ import { Check, X, MessageSquare, Video } from "lucide-react";
 import { generateRoomId } from "@/lib/utils";
 import LiveCursors from "./components/LiveCursors";
 import { VisiblePanels, CodeFile, Participant, ChatMessage } from "./types";
-import VideoCall from "@/components/VideoCall";
+import FileExplorer from "@/components/FileExplorer";
+import CollaborationSidebar from "@/components/CollaborationSidebar";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -755,53 +756,76 @@ const Room = () => {
 
         <div className="h-[calc(100vh-10rem)] px-2 md:px-4 pb-4">
           <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
-            <div ref={editorContainerRef} className="relative flex-1">
-              <EditorPanel
-                showFileExplorer={showFileExplorer}
-                files={files}
-                activeTab={activeTab}
-                handleFileClick={handleFileClick}
-                currentFile={currentFile}
-                handleCodeChange={handleCodeChange}
-                terminal={terminal}
-                handleRunCode={handleRunCode}
-                projectFiles={files}
-                onCreateFile={handleCreateFile}
-                onCreateFolder={handleCreateFolder}
-                onMoveFile={handleMoveFile}
-                visiblePanels={visiblePanels}
-                editable={true} // Ensure files are editable
-                onDeleteFile={handleDeleteFile} // Add delete file capability
-                onRenameFile={handleRenameFile} // Add rename file capability
-              />
-              <LiveCursors 
-                containerRef={editorContainerRef} 
-                cursorPositions={liveCursorPositions}
-              />
-            </div>
-            
-            {visiblePanels.videos && (
-              <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
+            {/* File Explorer Panel - Left Side */}
+            {showFileExplorer && (
+              <>
+                <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-card/50 backdrop-blur-sm">
+                  <FileExplorer 
+                    files={files}
+                    onFileSelect={handleFileClick}
+                    onCreateFile={handleCreateFile}
+                    onCreateFolder={handleCreateFolder}
+                    onMoveFile={handleMoveFile}
+                    onDeleteFile={handleDeleteFile}
+                    onRenameFile={handleRenameFile}
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
+              </>
             )}
             
+            {/* Editor and Terminal Panel - Center */}
+            <ResizablePanel defaultSize={showFileExplorer ? 50 : 70} className="relative">
+              <div ref={editorContainerRef} className="relative flex-1 h-full">
+                <EditorPanel
+                  files={files}
+                  activeTab={activeTab}
+                  handleFileClick={handleFileClick}
+                  currentFile={currentFile}
+                  handleCodeChange={handleCodeChange}
+                  terminal={terminal}
+                  handleRunCode={handleRunCode}
+                  projectFiles={files}
+                  onCreateFile={handleCreateFile}
+                  onCreateFolder={handleCreateFolder}
+                  onMoveFile={handleMoveFile}
+                  visiblePanels={visiblePanels}
+                  editable={true}
+                  onDeleteFile={handleDeleteFile}
+                  onRenameFile={handleRenameFile}
+                  showFileExplorer={false}
+                />
+                <LiveCursors 
+                  containerRef={editorContainerRef} 
+                  cursorPositions={liveCursorPositions}
+                />
+              </div>
+            </ResizablePanel>
+            
+            {/* Video Panel - Right Side */}
             {visiblePanels.videos && (
-              <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm">
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 overflow-hidden">
-                    <VideoCall 
-                      roomId={roomId || ""} 
-                      onChatToggle={toggleChat} 
-                      isChatOpen={isChatOpen} 
-                    />
-                  </div>
-                </div>
-              </ResizablePanel>
+              <>
+                <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
+                <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm relative">
+                  <CollaborationSidebar 
+                    visiblePanels={visiblePanels}
+                    isChatOpen={isChatOpen}
+                    toggleChat={toggleChat}
+                    roomId={roomId || ""}
+                    isRoomOwner={roomId ? isRoomOwner(roomId) : true}
+                    currentFile={currentFile}
+                    files={files}
+                    accessRequests={accessRequests}
+                    onApproveAccess={handleApproveAccess}
+                    onDenyAccess={handleDenyAccess}
+                  />
+                </ResizablePanel>
+              </>
             )}
           </ResizablePanelGroup>
         </div>
         
         {/* Chat panels - mobile and desktop */}
-        {/* ... keep existing code (chat panel UI) */}
         {isMobile && (
           <Sheet>
             <SheetTrigger asChild>

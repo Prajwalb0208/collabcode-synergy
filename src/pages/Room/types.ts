@@ -4,24 +4,14 @@ export interface CodeFile {
   language: string;
   content: string;
   id?: string;
-  path?: string;
-  folderId?: string;
-}
-
-export interface VisiblePanels {
-  editor: boolean;
-  terminal: boolean;
-  git: boolean;
-  videos: boolean;
-  collaboration: boolean;
 }
 
 export interface Participant {
   id: string;
   name: string;
-  color?: string;
   avatar?: string;
-  status?: 'active' | 'away' | 'offline';
+  color?: string;
+  status: 'active' | 'away' | 'offline';
   cursorPosition?: {
     line: number;
     column: number;
@@ -35,32 +25,22 @@ export interface ChatMessage {
   userName: string;
   userColor?: string;
   text: string;
-  timestamp: Date;
+  timestamp: Date | string;
 }
 
-export interface LiveCursor {
-  x: number;
-  y: number;
-  userName: string;
+export interface VisiblePanels {
+  editor: boolean;
+  terminal: boolean;
+  git: boolean;
+  videos: boolean;
+  collaboration: boolean;
 }
 
 export interface GitHubRepo {
+  name: string;
+  url: string;
   owner: string;
-  repo: string;
-  branch?: string;
-  path?: string;
-}
-
-export interface Folder {
-  id: string;
-  name: string;
-  parentId?: string;
-  children?: (Folder | FileReference)[];
-}
-
-export interface FileReference {
-  id: string;
-  name: string;
-  fileId: string;
-  parentId?: string;
+  isPrivate: boolean;
+  description?: string;
+  lastUpdated?: Date;
 }

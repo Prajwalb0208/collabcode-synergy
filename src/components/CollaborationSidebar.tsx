@@ -62,33 +62,30 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
   
   return (
     <>
-      <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
-      <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm">
-        <div className="flex flex-col h-full">
-          {/* Share link button */}
-          <div className="p-2 border-b border-border/50">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full flex items-center justify-center gap-2"
-              onClick={handleShareLink}
-            >
-              <Share2 className="h-4 w-4" />
-              Share Session Link
-            </Button>
-          </div>
-          
-          <div className="flex-1 overflow-hidden">
-            {visiblePanels.videos && (
-              <VideoCall 
-                roomId={roomId} 
-                onChatToggle={toggleChat} 
-                isChatOpen={isChatOpen} 
-              />
-            )}
-          </div>
+      <div className="flex flex-col h-full">
+        {/* Share link button */}
+        <div className="p-2 border-b border-border/50">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full flex items-center justify-center gap-2"
+            onClick={handleShareLink}
+          >
+            <Share2 className="h-4 w-4" />
+            Share Session Link
+          </Button>
         </div>
-      </ResizablePanel>
+        
+        <div className="flex-1 overflow-hidden">
+          {visiblePanels.videos && (
+            <VideoCall 
+              roomId={roomId} 
+              onChatToggle={toggleChat} 
+              isChatOpen={isChatOpen} 
+            />
+          )}
+        </div>
+      </div>
       
       {/* Share Link Dialog */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>

@@ -10,7 +10,9 @@ import {
   ChevronDown, 
   FilePlus, 
   FolderPlus,
-  Move
+  Move,
+  Trash2,
+  Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CodeFile } from "@/pages/Room/types";
@@ -35,6 +37,8 @@ interface FileExplorerProps {
   onCreateFile?: (fileName: string, language: string, folderId?: string, content?: string) => void;
   onCreateFolder?: (folderName: string, parentId?: string) => void;
   onMoveFile?: (fileId: string, targetFolderId: string) => void;
+  onDeleteFile?: (fileName: string) => void;
+  onRenameFile?: (oldName: string, newName: string) => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({ 
@@ -42,13 +46,18 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   onFileSelect,
   onCreateFile,
   onCreateFolder,
-  onMoveFile
+  onMoveFile,
+  onDeleteFile,
+  onRenameFile
 }) => {
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
+  const [renamingNode, setRenamingNode] = useState<{id: string, oldName: string} | null>(null);
+  const [newNodeName, setNewNodeName] = useState("");
   const [selectedNode, setSelectedNode] = useState<FileNode | null>(null);
   const [draggedNode, setDraggedNode] = useState<FileNode | null>(null);
   const [dropTargetNode, setDropTargetNode] = useState<FileNode | null>(null);
@@ -60,7 +69,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       
       files.forEach((file, index) => {
         rootFolder.push({
-          id: `file-${index}`,
+          id: file.id || `file-${index}`,
           name: file.name,
           type: "file",
           language: file.language,
@@ -70,52 +79,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       
       setFileTree(rootFolder);
     } else {
-      setFileTree([
-        {
-          id: "1",
-          name: "src",
-          type: "folder",
-          expanded: true,
-          children: [
-            {
-              id: "2",
-              name: "components",
-              type: "folder",
-              expanded: true,
-              parentId: "1",
-              children: [
-                { id: "3", name: "Button.tsx", type: "file", language: "typescript", parentId: "2" },
-                { id: "4", name: "Card.tsx", type: "file", language: "typescript", parentId: "2" },
-                { id: "5", name: "Input.tsx", type: "file", language: "typescript", parentId: "2" },
-              ]
-            },
-            {
-              id: "6",
-              name: "pages",
-              type: "folder",
-              parentId: "1",
-              children: [
-                { id: "7", name: "Home.tsx", type: "file", language: "typescript", parentId: "6" },
-                { id: "8", name: "About.tsx", type: "file", language: "typescript", parentId: "6" },
-              ]
-            },
-            { id: "9", name: "App.tsx", type: "file", language: "typescript", parentId: "1" },
-            { id: "10", name: "main.tsx", type: "file", language: "typescript", parentId: "1" },
-          ]
-        },
-        {
-          id: "11",
-          name: "public",
-          type: "folder",
-          children: [
-            { id: "12", name: "index.html", type: "file", language: "html", parentId: "11" },
-            { id: "13", name: "favicon.ico", type: "file", parentId: "11" },
-          ]
-        },
-        { id: "14", name: "package.json", type: "file", language: "json" },
-        { id: "15", name: "tsconfig.json", type: "file", language: "json" },
-        { id: "16", name: "README.md", type: "file", language: "markdown" },
-      ]);
+      setFileTree([]);
     }
   }, [files]);
 
@@ -176,12 +140,28 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     setSelectedNode(folderId ? findNodeById(folderId, fileTree) : null);
     setIsCreatingFile(true);
     setIsCreatingFolder(false);
+    setIsRenaming(false);
   };
 
   const handleCreateFolder = (parentId?: string) => {
     setSelectedNode(parentId ? findNodeById(parentId, fileTree) : null);
     setIsCreatingFolder(true);
     setIsCreatingFile(false);
+    setIsRenaming(false);
+  };
+  
+  const handleRenameNode = (node: FileNode) => {
+    setRenamingNode({ id: node.id, oldName: node.name });
+    setNewNodeName(node.name);
+    setIsRenaming(true);
+    setIsCreatingFile(false);
+    setIsCreatingFolder(false);
+  };
+  
+  const handleDeleteNode = (node: FileNode) => {
+    if (node.type === "file" && onDeleteFile) {
+      onDeleteFile(node.name);
+    }
   };
 
   const findNodeById = (id: string, nodes: FileNode[]): FileNode | null => {
@@ -257,6 +237,30 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       });
     }
   };
+  
+  const submitRename = () => {
+    if (!renamingNode) return;
+    
+    if (newNodeName.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const node = findNodeById(renamingNode.id, fileTree);
+    if (node && node.type === "file" && onRenameFile) {
+      onRenameFile(renamingNode.oldName, newNodeName);
+      setIsRenaming(false);
+      setRenamingNode(null);
+      toast({
+        title: "Success",
+        description: `Renamed ${renamingNode.oldName} to ${newNodeName}`
+      });
+    }
+  };
 
   const handleDragStart = (e: React.DragEvent, node: FileNode) => {
     setDraggedNode(node);
@@ -301,7 +305,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       <div key={node.id} className="file-tree-item">
         <div 
           className={cn(
-            "flex items-center py-1 px-2 rounded-md hover:bg-muted/70 cursor-pointer select-none",
+            "flex items-center py-1 px-2 rounded-md hover:bg-muted/70 cursor-pointer select-none group",
             "transition-colors duration-100",
             { 
               "text-sm": level === 0, 
@@ -357,6 +361,26 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             <div className="ml-auto opacity-0 group-hover:opacity-100 flex gap-1">
               <button 
                 className="p-1 rounded hover:bg-muted"
+                title="Rename File"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRenameNode(node);
+                }}
+              >
+                <Edit className="h-3 w-3" />
+              </button>
+              <button 
+                className="p-1 rounded hover:bg-muted"
+                title="Delete File"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteNode(node);
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+              <button 
+                className="p-1 rounded hover:bg-muted"
                 title="Move File"
               >
                 <Move className="h-3 w-3" />
@@ -396,26 +420,39 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         </div>
       </div>
       
-      {(isCreatingFile || isCreatingFolder) && (
+      {(isCreatingFile || isCreatingFolder || isRenaming) && (
         <div className="p-2 border-b flex items-center gap-2">
           <Input 
             size={1}
-            placeholder={isCreatingFile ? "File name" : "Folder name"}
-            value={isCreatingFile ? newFileName : newFolderName}
+            placeholder={
+              isCreatingFile ? "File name" : 
+              isCreatingFolder ? "Folder name" : 
+              "New name"
+            }
+            value={
+              isCreatingFile ? newFileName : 
+              isCreatingFolder ? newFolderName : 
+              newNodeName
+            }
             onChange={(e) => {
               if (isCreatingFile) {
                 setNewFileName(e.target.value);
-              } else {
+              } else if (isCreatingFolder) {
                 setNewFolderName(e.target.value);
+              } else {
+                setNewNodeName(e.target.value);
               }
             }}
             className="h-7 text-xs"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                isCreatingFile ? submitNewFile() : submitNewFolder();
+                if (isCreatingFile) submitNewFile();
+                else if (isCreatingFolder) submitNewFolder();
+                else submitRename();
               } else if (e.key === 'Escape') {
                 setIsCreatingFile(false);
                 setIsCreatingFolder(false);
+                setIsRenaming(false);
               }
             }}
             autoFocus
@@ -423,9 +460,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           <Button 
             size="sm" 
             className="h-7 text-xs px-2"
-            onClick={isCreatingFile ? submitNewFile : submitNewFolder}
+            onClick={
+              isCreatingFile ? submitNewFile : 
+              isCreatingFolder ? submitNewFolder : 
+              submitRename
+            }
           >
-            Create
+            {isRenaming ? "Rename" : "Create"}
           </Button>
           <Button 
             size="sm" 
@@ -434,6 +475,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             onClick={() => {
               setIsCreatingFile(false);
               setIsCreatingFolder(false);
+              setIsRenaming(false);
             }}
           >
             Cancel
@@ -441,7 +483,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         </div>
       )}
       
-      <ScrollArea className={`h-[calc(100%-${(isCreatingFile || isCreatingFolder) ? '80px' : '40px'})]`}>
+      <ScrollArea className={`h-[calc(100%-${(isCreatingFile || isCreatingFolder || isRenaming) ? '80px' : '40px'})]`}>
         <div className="p-2">
           {renderTree(fileTree)}
         </div>
