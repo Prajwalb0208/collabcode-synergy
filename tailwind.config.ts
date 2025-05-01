@@ -70,6 +70,11 @@ export default {
 					900: '#1e3a8a',
 					950: '#172554',
 				},
+				zinc: {
+					700: '#3f3f46',
+					800: '#27272a',
+					900: '#18181b'
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

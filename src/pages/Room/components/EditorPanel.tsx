@@ -26,6 +26,8 @@ interface EditorPanelProps {
     editor: boolean;
     terminal: boolean;
     git: boolean;
+    videos: boolean;
+    collaboration: boolean;
   };
 }
 
@@ -183,15 +185,15 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               
               <ResizablePanel defaultSize={30} minSize={15}>
                 <Tabs defaultValue={visiblePanels.terminal ? "terminal" : "git"} className="h-full flex flex-col">
-                  <TabsList className="justify-start px-2 pt-2 bg-zinc-800 border-b border-zinc-700">
+                  <TabsList className="justify-start px-2 pt-2 bg-zinc-800 border-b border-zinc-700 rounded-none">
                     {visiblePanels.terminal && (
-                      <TabsTrigger value="terminal" className="text-zinc-300 data-[state=active]:text-white">
+                      <TabsTrigger value="terminal" className="text-zinc-300 data-[state=active]:text-white data-[state=active]:bg-zinc-900">
                         <Terminal className="h-4 w-4 mr-2" />
                         Terminal
                       </TabsTrigger>
                     )}
                     {visiblePanels.git && (
-                      <TabsTrigger value="git" className="text-zinc-300 data-[state=active]:text-white">
+                      <TabsTrigger value="git" className="text-zinc-300 data-[state=active]:text-white data-[state=active]:bg-zinc-900">
                         <GitBranch className="h-4 w-4 mr-2" />
                         Git
                       </TabsTrigger>
@@ -211,8 +213,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   
                   <div className="flex-1 overflow-hidden">
                     {visiblePanels.terminal && (
-                      <TabsContent value="terminal" className="h-full flex flex-col m-0 data-[state=active]:flex-1">
-                        <div className="terminal-container p-2 text-zinc-300 font-mono text-sm flex-1 overflow-auto custom-scrollbar bg-zinc-900">
+                      <TabsContent value="terminal" className="h-full flex flex-col m-0 data-[state=active]:flex-1 p-0 border-0">
+                        <div className="terminal-container p-2 text-zinc-300 font-mono text-sm flex-1 overflow-auto custom-scrollbar bg-zinc-900 h-full">
                           {terminal.length === 0 ? (
                             <div className="text-zinc-500 italic p-2">
                               Terminal ready. Type commands below or click 'Run' to execute code.
@@ -244,7 +246,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                     )}
                     
                     {visiblePanels.git && (
-                      <TabsContent value="git" className="h-full m-0 p-4 overflow-auto bg-zinc-900 data-[state=active]:flex-1">
+                      <TabsContent value="git" className="h-full m-0 p-4 overflow-auto bg-zinc-900 data-[state=active]:flex-1 border-0">
                         <div className="space-y-4">
                           <div className="rounded-md border border-zinc-700 p-3">
                             <div className="flex items-center justify-between mb-3">
