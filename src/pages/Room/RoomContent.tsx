@@ -1,4 +1,3 @@
-
 import React from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import PanelToggleBar from "./components/PanelToggleBar";
@@ -6,12 +5,12 @@ import EditorPanel from "./components/EditorPanel";
 import FileExplorer from "@/components/FileExplorer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 import Chat from "@/components/Chat";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import CollaborationSidebar from "@/components/CollaborationSidebar";
 import LiveCursors from "./components/LiveCursors";
-import { Check, X } from "lucide-react";
+import { Check } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import RoomHeader from "./components/RoomHeader";
 
@@ -219,6 +218,7 @@ const RoomContent: React.FC<RoomContentProps> = ({
                 roomId={roomId || ""} 
                 messages={chatMessages} 
                 onSendMessage={handleSendChatMessage}
+                onClose={toggleChat} // Add close handler
               />
             </div>
           </SheetContent>
@@ -231,20 +231,12 @@ const RoomContent: React.FC<RoomContentProps> = ({
             isChatOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          <div className="p-3 border-b bg-muted/40 flex items-center justify-between">
-            <h3 className="font-medium">Chat</h3>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={toggleChat}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <Chat 
-              roomId={roomId || ""} 
-              messages={chatMessages}
-              onSendMessage={handleSendChatMessage}
-              onClose={toggleChat}
-            />
-          </div>
+          <Chat 
+            roomId={roomId || ""} 
+            messages={chatMessages}
+            onSendMessage={handleSendChatMessage}
+            onClose={toggleChat}
+          />
         </div>
       )}
       

@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ChatMessage } from "@/pages/Room/types";
@@ -45,6 +45,16 @@ const Chat: React.FC<ChatProps> = ({ onClose, roomId, messages = [], onSendMessa
   
   return (
     <div className="flex flex-col h-full">
+      {/* Add chat header with close button */}
+      {onClose && (
+        <div className="p-3 border-b flex items-center justify-between bg-muted/20">
+          <h3 className="font-medium">Chat</h3>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm italic">

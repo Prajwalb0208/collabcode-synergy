@@ -3,7 +3,7 @@ import { ResizablePanel } from "@/components/ui/resizable";
 import VideoCall from "@/components/VideoCall";
 import { VisiblePanels, CodeFile } from "@/pages/Room/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { Share2 } from "lucide-react";
+import { Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
