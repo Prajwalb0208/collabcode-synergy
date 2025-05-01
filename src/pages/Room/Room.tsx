@@ -757,26 +757,23 @@ const Room = () => {
         <div className="h-[calc(100vh-10rem)] px-2 md:px-4 pb-4">
           <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
             {/* File Explorer Panel - Left Side */}
-            {showFileExplorer && (
-              <>
-                <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-card/50 backdrop-blur-sm">
-                  <FileExplorer 
-                    files={files}
-                    onFileSelect={handleFileClick}
-                    onCreateFile={handleCreateFile}
-                    onCreateFolder={handleCreateFolder}
-                    onMoveFile={handleMoveFile}
-                    onDeleteFile={handleDeleteFile}
-                    onRenameFile={handleRenameFile}
-                  />
-                </ResizablePanel>
-                <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
-              </>
-            )}
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-card/50 backdrop-blur-sm">
+              <FileExplorer 
+                files={files}
+                onFileSelect={handleFileClick}
+                onCreateFile={handleCreateFile}
+                onCreateFolder={handleCreateFolder}
+                onMoveFile={handleMoveFile}
+                onDeleteFile={handleDeleteFile}
+                onRenameFile={handleRenameFile}
+              />
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
             
             {/* Editor and Terminal Panel - Center */}
-            <ResizablePanel defaultSize={showFileExplorer ? 50 : 70} className="relative">
-              <div ref={editorContainerRef} className="relative flex-1 h-full">
+            <ResizablePanel defaultSize={50} className="relative">
+              <div ref={editorContainerRef} className="relative h-full">
                 <EditorPanel
                   files={files}
                   activeTab={activeTab}
@@ -794,6 +791,7 @@ const Room = () => {
                   onDeleteFile={handleDeleteFile}
                   onRenameFile={handleRenameFile}
                   showFileExplorer={false}
+                  onCursorPositionChange={handleCursorPositionChange}
                 />
                 <LiveCursors 
                   containerRef={editorContainerRef} 
@@ -803,25 +801,21 @@ const Room = () => {
             </ResizablePanel>
             
             {/* Video Panel - Right Side */}
-            {visiblePanels.videos && (
-              <>
-                <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
-                <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm relative">
-                  <CollaborationSidebar 
-                    visiblePanels={visiblePanels}
-                    isChatOpen={isChatOpen}
-                    toggleChat={toggleChat}
-                    roomId={roomId || ""}
-                    isRoomOwner={roomId ? isRoomOwner(roomId) : true}
-                    currentFile={currentFile}
-                    files={files}
-                    accessRequests={accessRequests}
-                    onApproveAccess={handleApproveAccess}
-                    onDenyAccess={handleDenyAccess}
-                  />
-                </ResizablePanel>
-              </>
-            )}
+            <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
+            <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm relative">
+              <CollaborationSidebar 
+                visiblePanels={visiblePanels}
+                isChatOpen={isChatOpen}
+                toggleChat={toggleChat}
+                roomId={roomId || ""}
+                isRoomOwner={roomId ? isRoomOwner(roomId) : true}
+                currentFile={currentFile}
+                files={files}
+                accessRequests={accessRequests}
+                onApproveAccess={handleApproveAccess}
+                onDenyAccess={handleDenyAccess}
+              />
+            </ResizablePanel>
           </ResizablePanelGroup>
         </div>
         
