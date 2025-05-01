@@ -1,5 +1,5 @@
 
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ResizablePanel } from "@/components/ui/resizable";
 import VideoCall from "@/components/VideoCall";
 import { VisiblePanels, CodeFile } from "@/pages/Room/types";
 import { useAuth } from "@/contexts/AuthContext";

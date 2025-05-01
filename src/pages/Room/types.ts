@@ -40,6 +40,9 @@ export interface GitHubRepo {
   name: string;
   url: string;
   owner: string;
+  repo: string; // Added missing property
+  branch?: string; // Added missing property
+  path?: string; // Added missing property 
   isPrivate: boolean;
   description?: string;
   lastUpdated?: Date;

@@ -140,13 +140,16 @@ export const parseGitHubUrl = (url: string): GitHubRepo | null => {
     
     if (!match) return null;
     
-    const [, owner, repo, branch, path] = match;
+    const [, owner, repoName, branch, path] = match;
     
     return {
       owner,
-      repo: repo.replace('.git', ''),
+      name: `${owner}/${repoName.replace('.git', '')}`,
+      repo: repoName.replace('.git', ''),
+      url: `https://github.com/${owner}/${repoName}`,
       branch: branch || 'main',
-      path: path || ''
+      path: path || '',
+      isPrivate: false // Default to false since we can't determine without authentication
     };
   } catch (error) {
     console.error("Error parsing GitHub URL:", error);
