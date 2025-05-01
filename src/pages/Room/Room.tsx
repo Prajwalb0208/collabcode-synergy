@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -12,7 +13,6 @@ import EditorPanel from "./components/EditorPanel";
 import Chat from "@/components/Chat";
 import AccessRequest from "./components/AccessRequest";
 import PendingApproval from "./components/PendingApproval";
-import { CodeFile, VisiblePanels, Participant, ChatMessage } from "./types";
 import { socketService } from "@/services/socketService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
