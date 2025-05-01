@@ -21,11 +21,15 @@ export function useFileOperations({
 }) {
   // File operations
   const handleCodeChange = useCallback((newCode: string) => {
-    setCurrentFile({
-      ...currentFile,
-      content: newCode
-    });
+    if (!currentFile) return;
     
+    // Update the current file content
+    setCurrentFile(prev => ({
+      ...prev,
+      content: newCode
+    }));
+    
+    // Update the file in the files array
     const updatedFiles = files.map(file => 
       file.name === currentFile.name 
         ? { ...file, content: newCode } 
@@ -35,8 +39,10 @@ export function useFileOperations({
     setFiles(updatedFiles);
     
     if (roomId) {
+      // Emit file update through socket
       socketService.emit("file-update", { files: updatedFiles, roomId });
       
+      // Handle auto save functionality
       if (autoSave) {
         const now = new Date();
         const timeSinceLastSave = lastSavedTime ? now.getTime() - lastSavedTime.getTime() : 60000;

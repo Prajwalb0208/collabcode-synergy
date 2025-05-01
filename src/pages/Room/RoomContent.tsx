@@ -1,4 +1,3 @@
-
 import React from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import PanelToggleBar from "./components/PanelToggleBar";
@@ -163,11 +162,11 @@ const RoomContent: React.FC<RoomContentProps> = ({
                 onCreateFolder={handleCreateFolder}
                 onMoveFile={handleMoveFile}
                 visiblePanels={visiblePanels}
-                editable={true}
                 onDeleteFile={handleDeleteFile}
                 onRenameFile={handleRenameFile}
                 showFileExplorer={false}
                 onCursorPositionChange={handleCursorPositionChange}
+                editable={true} // Always set to true to ensure files are editable
               />
               <LiveCursors 
                 containerRef={editorContainerRef} 

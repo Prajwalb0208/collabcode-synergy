@@ -16,7 +16,7 @@ const CodeEditor = ({
   onChange, 
   language = "javascript",
   onCursorPositionChange,
-  readOnly = false
+  readOnly = false // Default to false to allow editing
 }: CodeEditorProps) => {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -25,7 +25,6 @@ const CodeEditor = ({
     // Set up event listener for cursor position
     if (editorRef.current && onCursorPositionChange) {
       const disposable = editorRef.current.onDidChangeCursorPosition(e => {
-        // Make sure roomId and userId are set before emitting cursor position
         onCursorPositionChange(e.position.lineNumber - 1, e.position.column - 1);
       });
       
@@ -57,7 +56,7 @@ const CodeEditor = ({
         horizontalScrollbarSize: 10,
         alwaysConsumeMouseWheel: false
       },
-      readOnly: readOnly // Use the prop value correctly
+      readOnly: readOnly
     });
 
     // Focus editor
@@ -109,7 +108,7 @@ const CodeEditor = ({
           fontSize: 14,
           lineHeight: 20,
           fontWeight: '400',
-          readOnly: readOnly // Use the prop value correctly
+          readOnly: readOnly
         }}
         className="editor-container"
       />

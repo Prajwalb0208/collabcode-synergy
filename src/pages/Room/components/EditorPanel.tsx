@@ -22,6 +22,9 @@ interface EditorPanelProps {
   onCreateFile?: (fileName: string, language: string, folderId?: string, content?: string) => void;
   onCreateFolder?: (folderName: string, parentId?: string) => void;
   onMoveFile?: (fileId: string, targetFolderId: string) => void;
+  onDeleteFile?: (fileName: string) => void;
+  onRenameFile?: (oldName: string, newName: string) => void;
+  onCursorPositionChange?: (line: number, column: number) => void;
   visiblePanels: {
     editor: boolean;
     terminal: boolean;
@@ -30,9 +33,6 @@ interface EditorPanelProps {
     collaboration: boolean;
   };
   editable?: boolean;
-  onDeleteFile?: (fileName: string) => void;
-  onRenameFile?: (oldName: string, newName: string) => void;
-  onCursorPositionChange?: (line: number, column: number) => void;
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -49,7 +49,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   onCreateFolder,
   onMoveFile,
   visiblePanels,
-  editable = true,
+  editable = true, // Default to true so files are editable by default
   onDeleteFile,
   onRenameFile,
   onCursorPositionChange
@@ -86,7 +86,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               code={ensuredCurrentFile.content}
               onChange={handleCodeChange}
               language={ensuredCurrentFile.language}
-              readOnly={!editable} // Pass the editable prop correctly
+              readOnly={!editable}
               onCursorPositionChange={onCursorPositionChange}
             />
           </div>
