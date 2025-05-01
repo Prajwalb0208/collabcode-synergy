@@ -3,6 +3,7 @@ export interface CodeFile {
   name: string;
   language: string;
   content: string;
+  id?: string;
   path?: string;
   folderId?: string;
 }
@@ -18,9 +19,9 @@ export interface VisiblePanels {
 export interface Participant {
   id: string;
   name: string;
+  color?: string;
   avatar?: string;
-  color: string;
-  status: string;
+  status?: 'active' | 'away' | 'offline';
   cursorPosition?: {
     line: number;
     column: number;
@@ -37,30 +38,8 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-export interface GitHubRepo {
-  owner: string;
-  repo: string;
-  branch?: string;
-  path?: string;
-}
-
-export interface Folder {
-  id: string;
-  name: string;
-  parentId?: string;
-  children?: (Folder | FileReference)[];
-}
-
-export interface FileReference {
-  id: string;
-  name: string;
-  fileId: string;
-  parentId?: string;
-}
-
 export interface LiveCursor {
   x: number;
   y: number;
-  userId: string;
   userName: string;
 }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -19,8 +20,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Check, X, MessageSquare } from "lucide-react";
 import { generateRoomId } from "@/lib/utils";
 import CollaborationSidebar from "./components/CollaborationSidebar";
-import LiveCursors from "@/pages/Room/components/LiveCursors";
-import { VisiblePanels, CodeFile, Participant, ChatMessage, LiveCursor } from "./types";
+import LiveCursors from "./components/LiveCursors";
+import { VisiblePanels, CodeFile, Participant, ChatMessage } from "./types";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
