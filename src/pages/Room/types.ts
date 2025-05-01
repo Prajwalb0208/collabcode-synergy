@@ -43,3 +43,24 @@ export interface LiveCursor {
   y: number;
   userName: string;
 }
+
+export interface GitHubRepo {
+  owner: string;
+  repo: string;
+  branch?: string;
+  path?: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  parentId?: string;
+  children?: (Folder | FileReference)[];
+}
+
+export interface FileReference {
+  id: string;
+  name: string;
+  fileId: string;
+  parentId?: string;
+}
