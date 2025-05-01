@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRoomHistory } from '@/contexts/RoomHistoryContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 export const useRoomState = () => {
   const { roomId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const joinParam = searchParams.get('join');
   const isJoining = joinParam === 'true';
@@ -61,7 +62,7 @@ export const useRoomState = () => {
   // Authentication and room context
   const { user } = useAuth();
   const { 
-    rooms, 
+    recentRooms, 
     addRoom, 
     getRoom,
     updateRoomFiles,
@@ -81,6 +82,7 @@ export const useRoomState = () => {
   const [currentFile, setCurrentFile] = useState(initialFiles[0]);
   const [terminal, setTerminal] = useState<string[]>([]);
   const [sessionName, setSessionName] = useState(roomId ? `Session-${roomId.substring(0, 5)}` : 'New Session');
+  const [sessionLoaded, setSessionLoaded] = useState(false);
   
   // UI state
   const [showFileExplorer, setShowFileExplorer] = useState(true);
@@ -116,7 +118,14 @@ export const useRoomState = () => {
       
       if (roomData) {
         setFiles(roomData.files || initialFiles);
-        setFolders(roomData.folders || []);
+        
+        // Make sure we're accessing folders safely
+        if (roomData.hasOwnProperty('folders')) {
+          setFolders(roomData.folders || []);
+        } else {
+          setFolders([]);
+        }
+        
         setSessionName(roomData.name || `Session-${roomId.substring(0, 5)}`);
         
         // Initialize with the first file as current
@@ -125,12 +134,12 @@ export const useRoomState = () => {
           setActiveTab(roomData.files[0].name);
         }
         
-        // Add room owner as participant
+        // Add room owner as participant - safely access owner properties
         setParticipants([{
           id: roomData.owner,
-          name: roomData.ownerName || 'Owner',
+          name: roomData.hasOwnProperty('ownerName') ? roomData.ownerName : 'Owner',
           role: 'owner',
-          avatar: roomData.ownerAvatar
+          avatar: roomData.hasOwnProperty('ownerAvatar') ? roomData.ownerAvatar : undefined
         }]);
         
         // If the current user is the owner, add them to participants
@@ -168,17 +177,17 @@ export const useRoomState = () => {
         
         // If user navigated to /new-room, create a new one and redirect
         if (window.location.pathname === '/new-room' && user) {
+          // Call addRoom with a proper room object
           addRoom({
             id: newRoomId,
             name: `Session-${newRoomId.substring(0, 5)}`,
+            description: "Collaborative coding session",
+            lastVisited: new Date(),
             owner: user.id,
-            ownerName: user.name || user.email,
-            ownerAvatar: user.avatar,
+            participants: [user.id],
+            pendingRequests: [],
             files: initialFiles,
-            folders: [],
-            participants: [],
-            createdAt: new Date(),
-            lastUpdated: new Date()
+            createdAt: new Date()
           });
           
           // Navigate to the new room
@@ -191,6 +200,8 @@ export const useRoomState = () => {
   return {
     roomId,
     user,
+    navigate,
+    location,
     files,
     setFiles,
     folders,
@@ -227,6 +238,8 @@ export const useRoomState = () => {
     setScreenSharingUser,
     sessionName,
     setSessionName,
+    sessionLoaded,
+    setSessionLoaded,
     toast,
     updateRoomFiles,
     isRoomOwner,
@@ -234,6 +247,8 @@ export const useRoomState = () => {
     isPendingApproval,
     requestAccess,
     approveAccess,
-    denyAccess
+    denyAccess,
+    addRoom,
+    getRoom
   };
 };

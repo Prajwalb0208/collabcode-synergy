@@ -30,7 +30,10 @@ export function useSocketHandlers({
   // Socket connection and event handling
   useEffect(() => {
     if (roomId && user) {
-      addRoom(roomId);
+      // Ensure addRoom is available and is a function before calling it
+      if (typeof addRoom === 'function') {
+        addRoom(roomId);
+      }
       
       socketService.connect(roomId, user.id);
       

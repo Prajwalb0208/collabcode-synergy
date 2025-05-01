@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { toast } from "@/components/ui/use-toast";
@@ -14,18 +15,22 @@ export interface Room {
   id: string;
   name: string;
   description?: string;
-  lastVisited: Date;
+  lastVisited?: Date;
   owner: string;
+  ownerName?: string;
+  ownerAvatar?: string;
   participants: string[];
   pendingRequests: string[];
   gitHubRepo?: string;
   files?: CodeFile[];
+  folders?: any[];
   createdAt: Date;
+  lastUpdated?: Date;
 }
 
 interface RoomHistoryContextType {
   recentRooms: Room[];
-  addRoom: (roomId: string) => void;
+  addRoom: (room: Room | string) => void;
   updateRoomDetails: (roomId: string, details: Partial<Omit<Room, 'id'>>) => void;
   updateRoomFiles: (roomId: string, files: CodeFile[]) => void;
   isRoomOwner: (roomId: string) => boolean;
@@ -64,14 +69,15 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const parsed = JSON.parse(saved);
         return parsed.map((room: any) => ({
           ...room,
-          lastVisited: new Date(room.lastVisited),
+          lastVisited: room.lastVisited ? new Date(room.lastVisited) : new Date(),
           createdAt: room.createdAt ? new Date(room.createdAt) : new Date(),
           owner: room.owner || userId,
           participants: room.participants || [userId],
           pendingRequests: room.pendingRequests || [],
           description: room.description || "",
           gitHubRepo: room.gitHubRepo || "",
-          files: room.files || []
+          files: room.files || [],
+          folders: room.folders || []
         }));
       } catch (e) {
         console.error("Error parsing room history:", e);
@@ -86,36 +92,60 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     localStorage.setItem(storageKey, JSON.stringify(recentRooms));
   }, [recentRooms, storageKey]);
 
-  const addRoom = (roomId: string) => {
+  const addRoom = (roomData: Room | string) => {
     setRecentRooms(prev => {
-      // Check if room already exists
-      const existingIndex = prev.findIndex(room => room.id === roomId);
-      
-      if (existingIndex >= 0) {
-        // Update existing room
-        const newRooms = [...prev];
-        newRooms[existingIndex] = {
-          ...newRooms[existingIndex],
-          lastVisited: new Date(),
-          participants: newRooms[existingIndex].participants.includes(userId)
-            ? newRooms[existingIndex].participants
-            : [...newRooms[existingIndex].participants, userId]
-        };
-        return newRooms;
-      } else {
-        // Add new room, limit to 50 recent rooms (increased from 20)
-        const newRoom: Room = {
-          id: roomId,
-          name: `Session ${roomId.substring(0, 4)}...`,
-          description: "Collaborative coding session",
-          lastVisited: new Date(),
-          createdAt: new Date(),
-          owner: userId,
-          participants: [userId],
-          pendingRequests: [],
-          files: []
-        };
-        return [newRoom, ...prev].slice(0, 50);
+      // If roomData is just a string (roomId), find it in existing rooms or create minimal room
+      if (typeof roomData === 'string') {
+        const roomId = roomData;
+        // Check if room already exists
+        const existingIndex = prev.findIndex(room => room.id === roomId);
+        
+        if (existingIndex >= 0) {
+          // Update existing room
+          const newRooms = [...prev];
+          newRooms[existingIndex] = {
+            ...newRooms[existingIndex],
+            lastVisited: new Date(),
+            participants: newRooms[existingIndex].participants.includes(userId)
+              ? newRooms[existingIndex].participants
+              : [...newRooms[existingIndex].participants, userId]
+          };
+          return newRooms;
+        } else {
+          // Add new minimal room, limit to 50 recent rooms
+          const newRoom: Room = {
+            id: roomId,
+            name: `Session ${roomId.substring(0, 4)}...`,
+            description: "Collaborative coding session",
+            lastVisited: new Date(),
+            createdAt: new Date(),
+            owner: userId,
+            ownerName: user?.name || user?.email,
+            ownerAvatar: user?.avatar,
+            participants: [userId],
+            pendingRequests: [],
+            files: []
+          };
+          return [newRoom, ...prev].slice(0, 50);
+        }
+      } 
+      // If roomData is a full Room object
+      else {
+        const existingIndex = prev.findIndex(room => room.id === roomData.id);
+        
+        if (existingIndex >= 0) {
+          // Update existing room with new data
+          const newRooms = [...prev];
+          newRooms[existingIndex] = {
+            ...newRooms[existingIndex],
+            ...roomData,
+            lastVisited: new Date()
+          };
+          return newRooms;
+        } else {
+          // Add new room with complete data
+          return [roomData, ...prev].slice(0, 50);
+        }
       }
     });
   };
@@ -142,7 +172,8 @@ export const RoomHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return {
             ...room,
             files: files,
-            lastVisited: new Date()
+            lastVisited: new Date(),
+            lastUpdated: new Date()
           };
         }
         return room;

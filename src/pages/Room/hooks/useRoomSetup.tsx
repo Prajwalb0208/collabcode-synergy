@@ -1,5 +1,6 @@
 
 import { useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { socketService } from "@/services/socketService";
 import { generateRoomId } from "@/lib/utils";
 
