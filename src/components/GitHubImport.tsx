@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { GitHubRepo, CodeFile } from "@/pages/Room/types";
+import { CodeFile, GitHubRepo } from "@/pages/Room/types";
 import { parseGitHubUrl, importFilesFromGitHub } from "@/services/githubService";
 import { Github, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";

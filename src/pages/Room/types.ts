@@ -9,6 +9,8 @@ export interface VisiblePanels {
   editor: boolean;
   terminal: boolean;
   git: boolean;
+  videos: boolean;
+  collaboration: boolean;
 }
 
 export interface Participant {
@@ -31,4 +33,11 @@ export interface ChatMessage {
   userColor?: string;
   text: string;
   timestamp: Date;
+}
+
+export interface GitHubRepo {
+  owner: string;
+  repo: string;
+  branch?: string;
+  path?: string;
 }
