@@ -17,11 +17,11 @@ import { socketService } from "@/services/socketService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Check, X, MessageSquare } from "lucide-react";
+import { Check, X, MessageSquare, Video } from "lucide-react";
 import { generateRoomId } from "@/lib/utils";
-import CollaborationSidebar from "./components/CollaborationSidebar";
 import LiveCursors from "./components/LiveCursors";
 import { VisiblePanels, CodeFile, Participant, ChatMessage } from "./types";
+import VideoCall from "@/components/VideoCall";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -74,7 +74,7 @@ const Room = () => {
     terminal: true,
     git: true,
     videos: true,
-    collaboration: true
+    collaboration: false // Removed collaboration panel by default
   });
   
   const [showFileExplorer, setShowFileExplorer] = useState(!isMobile);
@@ -460,6 +460,10 @@ const Room = () => {
     setIsChatOpen(!isChatOpen);
   };
 
+  const handleEndSession = () => {
+    navigate('/rooms'); // Navigate to sessions page when end class is clicked
+  };
+
   const togglePanelVisibility = (panel: keyof VisiblePanels) => {
     setVisiblePanels(prev => ({
       ...prev,
@@ -664,6 +668,7 @@ const Room = () => {
           lastSavedTime={lastSavedTime}
           participants={participants}
           onToggleChat={toggleChat}
+          onEndSession={handleEndSession} // Add handler for ending session
         />
 
         <div className="px-2 md:px-4">
@@ -689,6 +694,7 @@ const Room = () => {
                 onCreateFile={handleCreateFile}
                 onCreateFolder={handleCreateFolder}
                 visiblePanels={visiblePanels}
+                editable={true} // Enable file editing
               />
               <LiveCursors 
                 containerRef={editorContainerRef} 
@@ -697,18 +703,21 @@ const Room = () => {
             </div>
             
             {visiblePanels.videos && (
-              <CollaborationSidebar 
-                visiblePanels={visiblePanels}
-                isChatOpen={isChatOpen}
-                toggleChat={toggleChat}
-                roomId={roomId || ""}
-                isRoomOwner={roomId ? isRoomOwner(roomId) : false}
-                currentFile={currentFile}
-                files={files}
-                accessRequests={accessRequests}
-                onApproveAccess={handleApproveAccess}
-                onDenyAccess={handleDenyAccess}
-              />
+              <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
+            )}
+            
+            {visiblePanels.videos && (
+              <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm">
+                <div className="flex flex-col h-full">
+                  <div className="flex-1 overflow-hidden">
+                    <VideoCall 
+                      roomId={roomId || ""} 
+                      onChatToggle={toggleChat} 
+                      isChatOpen={isChatOpen} 
+                    />
+                  </div>
+                </div>
+              </ResizablePanel>
             )}
           </ResizablePanelGroup>
         </div>
@@ -740,13 +749,17 @@ const Room = () => {
           </Sheet>
         )}
         
-        {/* Desktop chat panel */}
-        {!isMobile && isChatOpen && (
-          <div className="fixed right-4 bottom-4 w-80 h-[500px] bg-background border shadow-lg rounded-lg overflow-hidden z-20 flex flex-col">
+        {/* Desktop chat panel - sliding from right side */}
+        {!isMobile && (
+          <div 
+            className={`fixed right-0 top-0 w-80 h-full bg-background border-l shadow-lg z-20 flex flex-col transition-transform duration-300 ${
+              isChatOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
             <div className="p-3 border-b bg-muted/40 flex items-center justify-between">
               <h3 className="font-medium">Chat</h3>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={toggleChat}>
-                <X className="mr-2 h-4 w-4" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
             <div className="flex-1 overflow-hidden">
@@ -754,6 +767,7 @@ const Room = () => {
                 roomId={roomId || ""} 
                 messages={chatMessages}
                 onSendMessage={handleSendChatMessage}
+                onClose={toggleChat}
               />
             </div>
           </div>

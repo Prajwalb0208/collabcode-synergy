@@ -32,6 +32,7 @@ interface EditorPanelProps {
     videos: boolean;
     collaboration: boolean;
   };
+  editable?: boolean; // Add prop to control editing capability
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -47,7 +48,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   onCreateFile,
   onCreateFolder,
   onMoveFile,
-  visiblePanels
+  visiblePanels,
+  editable = false // Default to false for backward compatibility
 }) => {
   const [terminalInput, setTerminalInput] = useState<string>("");
   const [terminalHistory, setTerminalHistory] = useState<string[]>([]);
@@ -203,6 +205,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                 code={currentFile.content}
                 onChange={handleCodeChange}
                 language={currentFile.language}
+                readOnly={!editable} // Make editor editable based on prop
               />
             </div>
           </ResizablePanel>
@@ -212,7 +215,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
               
               <ResizablePanel defaultSize={30} minSize={15}>
-                <Tabs defaultValue={visiblePanels.terminal ? "terminal" : "git"} className="h-full flex flex-col">
+                <Tabs defaultValue="terminal" className="h-full flex flex-col">
                   <TabsList className="justify-start px-2 pt-2 bg-zinc-800 border-b border-zinc-700 rounded-none">
                     {visiblePanels.terminal && (
                       <TabsTrigger value="terminal" className="text-zinc-300 data-[state=active]:text-white data-[state=active]:bg-zinc-900">
