@@ -1,7 +1,7 @@
 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Code, Terminal, Video, Users } from "lucide-react";
+import { Code, Terminal, GitBranch } from "lucide-react";
 import { VisiblePanels } from "../types";
 
 interface PanelToggleBarProps {
@@ -41,24 +41,13 @@ const PanelToggleBar: React.FC<PanelToggleBarProps> = ({
         </div>
         <div className="flex items-center space-x-2 bg-muted/30 px-3 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
           <Switch 
-            id="videos" 
-            checked={visiblePanels.videos} 
-            onCheckedChange={() => togglePanelVisibility('videos')}
+            id="git" 
+            checked={visiblePanels.git} 
+            onCheckedChange={() => togglePanelVisibility('git')}
           />
-          <Label htmlFor="videos" className="flex items-center text-sm cursor-pointer">
-            <Video className="h-3.5 w-3.5 mr-1.5 text-primary/80" />
-            Video
-          </Label>
-        </div>
-        <div className="flex items-center space-x-2 bg-muted/30 px-3 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
-          <Switch 
-            id="collaboration" 
-            checked={visiblePanels.collaboration} 
-            onCheckedChange={() => togglePanelVisibility('collaboration')}
-          />
-          <Label htmlFor="collaboration" className="flex items-center text-sm cursor-pointer">
-            <Users className="h-3.5 w-3.5 mr-1.5 text-primary/80" />
-            Collaboration
+          <Label htmlFor="git" className="flex items-center text-sm cursor-pointer">
+            <GitBranch className="h-3.5 w-3.5 mr-1.5 text-primary/80" />
+            Git
           </Label>
         </div>
       </div>

@@ -1,185 +1,110 @@
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SendHorizontal, X } from "lucide-react";
-import { socketService } from "@/services/socketService";
+import { Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Message {
-  id: string;
-  text: string;
-  sender: {
-    id: string;
-    name: string;
-    avatar?: string;
-    color: string;
-  };
-  timestamp: Date;
-}
+import { format } from "date-fns";
+import { ChatMessage } from "@/pages/Room/types";
 
 interface ChatProps {
   onClose?: () => void;
   roomId?: string;
+  messages?: ChatMessage[];
+  onSendMessage?: (message: string) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ onClose, roomId }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
+const Chat: React.FC<ChatProps> = ({ onClose, roomId, messages = [], onSendMessage }) => {
+  const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Auto scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Connect to socket for real-time chat
-  useEffect(() => {
-    if (!roomId || !user) return;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Listen for incoming messages
-    socketService.on("chat-message", (data) => {
-      if (data.sender.id !== user.id) {
-        setMessages(prev => [...prev, {
-          ...data,
-          timestamp: new Date(data.timestamp)
-        }]);
-      }
-    });
-    
-    // Add welcome message
-    setMessages([{
-      id: Date.now().toString(),
-      text: "Welcome to the chat. Messages will appear here as they are sent.",
-      sender: {
-        id: "system",
-        name: "System",
-        color: "#6E56CF",
-      },
-      timestamp: new Date()
-    }]);
-    
-    return () => {
-      socketService.off("chat-message");
-    };
-  }, [roomId, user]);
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  // Generate a consistent color for a user
-  const getUserColor = (userId: string) => {
-    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
-    const index = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-    return colors[index];
-  };
-
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !user || !roomId) return;
-    
-    const message: Message = {
-      id: Date.now().toString(),
-      text: newMessage,
-      sender: {
-        id: user.id,
-        name: user.name,
-        avatar: user.avatar,
-        color: getUserColor(user.id),
-      },
-      timestamp: new Date()
-    };
-    
-    // Add message to local state
-    setMessages([...messages, message]);
-    
-    // Send message to others via socket
-    socketService.emit("chat-message", {
-      ...message,
-      roomId
-    });
-    
-    setNewMessage("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+    if (input.trim() && onSendMessage) {
+      onSendMessage(input);
+      setInput("");
     }
   };
 
+  // Generate initials for avatar
+  const getInitials = (name: string) => {
+    return name.split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+  
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center p-3 border-b">
-        <h3 className="font-medium">Chat</h3>
-        {onClose && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 rounded-full" 
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
         {messages.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            No messages yet. Start a conversation!
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm italic">
+            No messages yet. Start the conversation!
           </div>
         ) : (
           messages.map((message) => (
             <div 
               key={message.id} 
-              className={`flex items-start gap-3 animate-in`}
-              style={{ animationDelay: "100ms" }}
+              className={`flex gap-2 ${message.userId === user?.id ? 'justify-end' : 'justify-start'}`}
             >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={message.sender.avatar} />
-                <AvatarFallback style={{ backgroundColor: message.sender.color }}>
-                  {message.sender.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{message.sender.name}</span>
-                  <span className="text-xs text-muted-foreground">{formatTime(message.timestamp)}</span>
+              {message.userId !== user?.id && (
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="" />
+                  <AvatarFallback 
+                    style={{ backgroundColor: message.userColor || "#6E59A5" }}
+                    className="text-xs text-white"
+                  >
+                    {getInitials(message.userName)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              
+              <div className={`max-w-[75%] ${message.userId === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'} p-2 px-3 rounded-lg`}>
+                {message.userId !== user?.id && (
+                  <div className="font-medium text-xs mb-1">{message.userName}</div>
+                )}
+                <div className="text-sm whitespace-pre-wrap break-words">
+                  {message.text}
                 </div>
-                <p className="text-sm text-foreground/90 break-words">{message.text}</p>
+                <div className="text-[10px] opacity-70 text-right mt-1">
+                  {format(new Date(message.timestamp), 'h:mm a')}
+                </div>
               </div>
+              
+              {message.userId === user?.id && (
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.avatar || ""} />
+                  <AvatarFallback className="bg-primary/80 text-xs text-white">
+                    {getInitials(user.name || user.email || "ME")}
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
           ))
         )}
         <div ref={messagesEndRef} />
       </div>
       
-      <div className="p-4 border-t border-border/50">
-        <div className="flex items-center gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            className="flex-1"
-          />
-          <Button 
-            onClick={handleSendMessage}
-            variant="default" 
-            size="icon"
-            disabled={!newMessage.trim() || !user}
-          >
-            <SendHorizontal className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+        <Input 
+          placeholder="Type your message..." 
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="flex-1"
+        />
+        <Button type="submit" size="icon">
+          <Send className="h-4 w-4" />
+        </Button>
+      </form>
     </div>
   );
 };

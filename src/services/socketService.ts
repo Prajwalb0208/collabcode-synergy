@@ -90,18 +90,19 @@ class SocketService {
   }
 
   // Send cursor position update to other users
-  emitCursorPosition(x: number, y: number, userName?: string) {
+  emitCursorPosition(line: number, column: number, fileName: string, userName?: string) {
     if (!this.roomId || !this.userId) {
       console.warn("Room ID or User ID not set, unable to emit cursor position");
       return;
     }
     
-    this.emit("cursor-move", {
+    this.emit("cursor-position", {
       roomId: this.roomId,
       userId: this.userId,
       userName,
-      x,
-      y,
+      line,
+      column,
+      fileName,
       timestamp: new Date()
     });
   }
@@ -119,6 +120,22 @@ class SocketService {
       code,
       fileName,
       language,
+      timestamp: new Date()
+    });
+  }
+
+  // Send chat message
+  sendChatMessage(text: string, userName?: string) {
+    if (!this.roomId || !this.userId) {
+      console.warn("Room ID or User ID not set, unable to send chat message");
+      return;
+    }
+    
+    this.emit("chat-message", {
+      roomId: this.roomId,
+      userId: this.userId,
+      userName,
+      text,
       timestamp: new Date()
     });
   }

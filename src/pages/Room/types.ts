@@ -1,42 +1,34 @@
 
-export interface VisiblePanels {
-  editor: boolean;
-  terminal: boolean;
-  videos: boolean;
-  collaboration: boolean;
-}
-
 export interface CodeFile {
   name: string;
   language: string;
   content: string;
-  lastEdited?: Date;
-  editedBy?: string;
-  path?: string;
 }
 
-export interface AutoSaveConfig {
-  enabled: boolean;
-  interval: number; // in milliseconds
-  lastSaved?: Date;
+export interface VisiblePanels {
+  editor: boolean;
+  terminal: boolean;
+  git: boolean;
 }
 
-export interface GitHubRepo {
-  owner: string;
-  repo: string;
-  branch?: string;
-  path?: string;
-}
-
-export interface DeploymentConfig {
-  frontend: {
-    path: string;
-    buildCommand: string;
-    outputDir: string;
+export interface Participant {
+  id: string;
+  name: string;
+  avatar?: string;
+  color: string;
+  status: string;
+  cursorPosition?: {
+    line: number;
+    column: number;
+    fileName: string;
   };
-  backend: {
-    path: string;
-    buildCommand: string;
-    entry: string;
-  };
+}
+
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  userColor?: string;
+  text: string;
+  timestamp: Date;
 }

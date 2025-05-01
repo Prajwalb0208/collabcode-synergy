@@ -1,52 +1,44 @@
-import React, { useState, useRef, useEffect } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Play, 
-  Save,
-  FileSymlink, 
-  Folder, 
-  Files, 
-  Copy, 
-  FolderClosed,
-  Download,
-  Share2,
-  Settings,
-  Pencil
-} from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogClose 
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
+import { 
+  Play, FileCode, FolderClosed, GitBranch, Save, CopyIcon,
+  Edit, Check, X, Share, MessageSquare, Clock, Video 
+} from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { 
+  Popover, PopoverContent, PopoverTrigger 
+} from "@/components/ui/popover";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { format } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Participant } from "../types";
 
 interface RoomHeaderProps {
   roomId?: string;
   handleRunCode: () => void;
   showFileExplorer: boolean;
-  setShowFileExplorer: (show: boolean) => void;
-  onCreateFile: (fileName: string, language: string) => void;
+  setShowFileExplorer: React.Dispatch<React.SetStateAction<boolean>>;
+  onCreateFile?: (fileName: string, language: string, content?: string) => void;
   sessionName: string;
   onUpdateSessionName: (name: string) => void;
   isOwner: boolean;
   onCopySessionCode: () => void;
-  onSaveSession?: () => void;
-  autoSave?: boolean;
-  onToggleAutoSave?: () => void;
-  lastSavedTime?: Date | null;
+  onSaveSession: () => void;
+  autoSave: boolean;
+  onToggleAutoSave: () => void;
+  lastSavedTime: Date | null;
+  participants?: Participant[];
+  onToggleChat?: () => void;
 }
 
 const RoomHeader: React.FC<RoomHeaderProps> = ({
@@ -60,253 +52,336 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
   isOwner,
   onCopySessionCode,
   onSaveSession,
-  autoSave = true,
+  autoSave,
   onToggleAutoSave,
-  lastSavedTime
+  lastSavedTime,
+  participants = [],
+  onToggleChat
 }) => {
-  const [showNewFileDialog, setShowNewFileDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState(sessionName);
+  const [showCreateFileDialog, setShowCreateFileDialog] = useState(false);
   const [fileName, setFileName] = useState("");
   const [fileType, setFileType] = useState("javascript");
-  const [showNameEditDialog, setShowNameEditDialog] = useState(false);
-  const [editedName, setEditedName] = useState(sessionName);
-  const [isNameFocused, setIsNameFocused] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  
-  const formatSavedTime = () => {
-    if (!lastSavedTime) return "Not saved yet";
-    
-    const now = new Date();
-    const diff = now.getTime() - lastSavedTime.getTime();
-    
-    if (diff < 60000) {
-      return "Just now";
-    } else if (diff < 3600000) {
-      const minutes = Math.floor(diff / 60000);
-      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
-    } else if (diff < 86400000) {
-      const hours = Math.floor(diff / 3600000);
-      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-    } else {
-      return lastSavedTime.toLocaleString();
-    }
-  };
-
-  const handleNewFile = () => {
-    if (fileName.trim()) {
-      let fullFileName = fileName;
-      if (!fullFileName.includes(".")) {
-        const extensions: Record<string, string> = {
-          javascript: ".js",
-          typescript: ".ts",
-          html: ".html",
-          css: ".css",
-          json: ".json"
-        };
-        fullFileName += extensions[fileType] || ".js";
-      }
-      
-      onCreateFile(fullFileName, fileType);
-      setFileName("");
-      setShowNewFileDialog(false);
-    }
-  };
-
-  const handleNameEdit = () => {
-    if (editedName.trim()) {
-      onUpdateSessionName(editedName);
-      setShowNameEditDialog(false);
-    }
-  };
+  const isMobile = useIsMobile();
   
   useEffect(() => {
-    if (showNameEditDialog && nameInputRef.current) {
-      nameInputRef.current.focus();
+    setNewName(sessionName);
+  }, [sessionName]);
+
+  const handleChangeSessionName = () => {
+    if (newName.trim()) {
+      onUpdateSessionName(newName);
+      setIsEditing(false);
     }
-  }, [showNameEditDialog]);
+  };
+
+  const handleCancelEdit = () => {
+    setNewName(sessionName);
+    setIsEditing(false);
+  };
+
+  const handleCreateFile = () => {
+    if (fileName.trim() && onCreateFile) {
+      onCreateFile(fileName, fileType);
+      setShowCreateFileDialog(false);
+      setFileName("");
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-2 mb-4">
-      <div className="flex items-center justify-between">
-        <div 
-          className="flex items-center gap-2 group cursor-pointer"
-          onClick={() => isOwner && setShowNameEditDialog(true)}
-        >
-          <h1 className="text-xl font-semibold flex items-center gap-2">
-            {sessionName}
-            {isOwner && (
-              <Pencil className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            )}
-          </h1>
-          <div className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-            {roomId}
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCopySessionCode();
-            }}
-            title="Copy session code"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
+    <div className="border-b sticky top-16 z-10 bg-background/95 backdrop-blur-sm">
+      <div className="container py-2 px-2 md:px-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-grow flex-shrink-0 md:flex-grow-0">
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <Input 
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="w-40 md:w-60"
+                autoFocus
+                onKeyUp={(e) => {
+                  if (e.key === "Enter") handleChangeSessionName();
+                  if (e.key === "Escape") handleCancelEdit();
+                }}
+              />
+              <Button variant="ghost" size="icon" onClick={handleChangeSessionName}>
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleCancelEdit}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h1 className="font-medium text-lg truncate max-w-[160px] md:max-w-xs">
+                {sessionName}
+              </h1>
+              {isOwner && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7" 
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
         
-        <div className="flex items-center gap-2">
-          {onSaveSession && (
-            <div className="flex items-center mr-2">
-              <div className="text-xs text-muted-foreground mr-2">
-                {autoSave ? `Auto-saved ${formatSavedTime()}` : "Auto-save off"}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs">Auto-save</span>
-                <Switch 
-                  checked={!!autoSave} 
-                  onCheckedChange={onToggleAutoSave}
-                  className="scale-75"
-                />
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="ml-2"
-                onClick={onSaveSession}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </Button>
+        {/* Participants & Features - Desktop */}
+        <div className="hidden md:flex items-center gap-4">
+          {/* Participants */}
+          {participants.length > 0 && (
+            <div className="flex -space-x-2">
+              {participants.slice(0, 3).map((participant, i) => (
+                <HoverCard key={participant.id}>
+                  <HoverCardTrigger asChild>
+                    <Avatar className="border-2 border-background cursor-pointer">
+                      <AvatarImage src={participant.avatar} />
+                      <AvatarFallback style={{ backgroundColor: participant.color || "#6E59A5" }}>
+                        {participant.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-60">
+                    <div className="flex justify-between space-x-4">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold">{participant.name}</h4>
+                        <div className="flex items-center pt-1">
+                          <div 
+                            className="h-2 w-2 rounded-full mr-2" 
+                            style={{ backgroundColor: participant.status === 'active' ? '#10b981' : '#6b7280' }}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {participant.status === 'active' ? 'Online' : 'Away'}
+                          </span>
+                        </div>
+                        {participant.cursorPosition && (
+                          <p className="text-xs text-muted-foreground">
+                            Editing: {participant.cursorPosition.fileName} (line {participant.cursorPosition.line + 1})
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              ))}
+              
+              {participants.length > 3 && (
+                <Avatar className="border-2 border-background">
+                  <AvatarFallback className="bg-muted text-muted-foreground">
+                    +{participants.length - 3}
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
           )}
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFileExplorer(!showFileExplorer)}
-            className="mr-2"
-          >
-            {showFileExplorer ? <FolderClosed className="h-4 w-4 mr-2" /> : <Folder className="h-4 w-4 mr-2" />}
-            {showFileExplorer ? "Hide Files" : "Show Files"}
-          </Button>
+          <div className="h-6 border-r border-muted"></div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="mr-2">
-                <FileSymlink className="h-4 w-4 mr-2" />
-                New File
+          {!autoSave && (
+            <Button variant="ghost" size="sm" onClick={onSaveSession} className="text-muted-foreground">
+              <Save className="h-4 w-4 mr-1" />
+              Save
+            </Button>
+          )}
+          
+          {autoSave && lastSavedTime && (
+            <div className="text-xs text-muted-foreground flex items-center">
+              <Clock className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              Saved {format(lastSavedTime, 'h:mm a')}
+            </div>
+          )}
+          
+          <div className="flex items-center space-x-1">
+            <Label htmlFor="auto-save" className="text-xs font-normal cursor-pointer">Auto-save</Label>
+            <Switch
+              id="auto-save"
+              checked={autoSave}
+              onCheckedChange={onToggleAutoSave}
+              className="h-4 w-8 bg-muted data-[state=checked]:bg-green-600"
+            />
+          </div>
+        </div>
+        
+        {/* Button Toolbar */}
+        <div className="flex items-center gap-1 md:gap-2 justify-end flex-wrap">
+          {/* Mobile view - minimized controls */}
+          <div className="flex md:hidden">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="px-2">
+                  Actions
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-52 p-2">
+                <div className="grid gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="justify-start"
+                    onClick={() => setShowFileExplorer(!showFileExplorer)}
+                  >
+                    <FolderClosed className="h-3.5 w-3.5 mr-2" />
+                    {showFileExplorer ? "Hide Files" : "Show Files"}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="justify-start"
+                    onClick={handleRunCode}
+                  >
+                    <Play className="h-3.5 w-3.5 mr-2" />
+                    Run Code
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="justify-start"
+                    onClick={() => setShowCreateFileDialog(true)}
+                  >
+                    <FileCode className="h-3.5 w-3.5 mr-2" />
+                    New File
+                  </Button>
+                  {!autoSave && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="justify-start"
+                      onClick={onSaveSession}
+                    >
+                      <Save className="h-3.5 w-3.5 mr-2" />
+                      Save
+                    </Button>
+                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="justify-start"
+                    onClick={onCopySessionCode}
+                  >
+                    <Share className="h-3.5 w-3.5 mr-2" />
+                    Share
+                  </Button>
+                  {participants.length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="justify-start"
+                      onClick={onToggleChat}
+                    >
+                      <MessageSquare className="h-3.5 w-3.5 mr-2" />
+                      Chat
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          {/* Desktop view - full controls */}
+          <div className="hidden md:flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowFileExplorer(!showFileExplorer)}
+              className="hidden md:flex"
+            >
+              <FolderClosed className="h-4 w-4 mr-2" />
+              {showFileExplorer ? "Hide Files" : "Show Files"}
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={() => setShowCreateFileDialog(true)}>
+              <FileCode className="h-4 w-4 mr-2" />
+              New File
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={handleRunCode}>
+              <Play className="h-4 w-4 mr-2" />
+              Run
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={onCopySessionCode}>
+              <Share className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+            
+            {participants.length > 0 && (
+              <Button variant="outline" size="sm" onClick={onToggleChat}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Chat
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => {
-                setFileType("javascript");
-                setShowNewFileDialog(true);
-              }}>
-                JavaScript (.js)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setFileType("typescript");
-                setShowNewFileDialog(true);
-              }}>
-                TypeScript (.ts)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setFileType("html");
-                setShowNewFileDialog(true);
-              }}>
-                HTML (.html)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setFileType("css");
-                setShowNewFileDialog(true);
-              }}>
-                CSS (.css)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setFileType("json");
-                setShowNewFileDialog(true);
-              }}>
-                JSON (.json)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
+          </div>
           
-          <Button onClick={handleRunCode} size="sm" className="bg-blue-600 hover:bg-blue-700">
-            <Play className="h-4 w-4 mr-2" />
-            Run
-          </Button>
+          {roomId && (
+            <div className="hidden lg:flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted/50 px-2.5 py-1 rounded-md text-sm text-muted-foreground">
+                <span>Session: </span>
+                <code className="text-xs font-mono">{roomId}</code>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={onCopySessionCode}
+              >
+                <CopyIcon className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-      
-      <Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
+
+      {/* Create File Dialog */}
+      <Dialog open={showCreateFileDialog} onOpenChange={setShowCreateFileDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New File</DialogTitle>
             <DialogDescription>
-              Enter a name for your new {fileType} file.
+              Enter a name for your new file
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                File Name
-              </Label>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="fileName">File Name</Label>
               <Input
-                id="name"
+                id="fileName"
+                placeholder="e.g., script.js, index.html"
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
-                placeholder={`example${fileType === "javascript" ? ".js" : fileType === "html" ? ".html" : fileType === "css" ? ".css" : ".ts"}`}
-                className="col-span-3"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleNewFile();
-                  }
-                }}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleNewFile} className="bg-blue-600 hover:bg-blue-700">Create</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showNameEditDialog} onOpenChange={setShowNameEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Session</DialogTitle>
-            <DialogDescription>
-              Enter a new name for your collaborative session.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="sessionName" className="text-right">
-                Session Name
-              </Label>
-              <Input
-                id="sessionName"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                className="col-span-3"
-                ref={nameInputRef}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleNameEdit();
-                  }
-                }}
-              />
+            
+            <div className="space-y-2">
+              <Label htmlFor="fileType">File Type</Label>
+              <select
+                id="fileType"
+                value={fileType}
+                onChange={(e) => setFileType(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="javascript">JavaScript (.js)</option>
+                <option value="typescript">TypeScript (.ts)</option>
+                <option value="html">HTML (.html)</option>
+                <option value="css">CSS (.css)</option>
+                <option value="json">JSON (.json)</option>
+                <option value="markdown">Markdown (.md)</option>
+              </select>
             </div>
           </div>
+          
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleNameEdit} className="bg-blue-600 hover:bg-blue-700">Save</Button>
+            <Button variant="outline" onClick={() => setShowCreateFileDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateFile} disabled={!fileName.trim()}>
+              Create
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

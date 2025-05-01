@@ -1,21 +1,24 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useToast } from "@/components/ui/use-toast";
 import { useRoomHistory } from "@/contexts/RoomHistoryContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import MainLayout from "@/layouts/MainLayout";
 import RoomHeader from "./components/RoomHeader";
 import PanelToggleBar from "./components/PanelToggleBar";
 import EditorPanel from "./components/EditorPanel";
-import CollaborationSidebar from "@/components/CollaborationSidebar";
+import Chat from "@/components/Chat";
 import AccessRequest from "./components/AccessRequest";
 import PendingApproval from "./components/PendingApproval";
-import { CodeFile, VisiblePanels } from "./types";
+import { CodeFile, VisiblePanels, Participant, ChatMessage } from "./types";
 import { socketService } from "@/services/socketService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Check, X, MessageSquare } from "lucide-react";
 import { generateRoomId } from "@/lib/utils";
 
 const Room = () => {
@@ -23,6 +26,7 @@ const Room = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const { 
     addRoom, 
     isRoomOwner, 
@@ -34,11 +38,13 @@ const Room = () => {
     getRoom,
     updateRoomFiles
   } = useRoomHistory();
+  
   const [currentFile, setCurrentFile] = useState<CodeFile>({
     name: "main.js",
     language: "javascript",
     content: "// Welcome to CollabCode!\n\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet('World'));"
   });
+  
   const [files, setFiles] = useState<CodeFile[]>([
     {
       name: "main.js",
@@ -56,6 +62,7 @@ const Room = () => {
       content: "body {\n  font-family: sans-serif;\n  margin: 0;\n  padding: 20px;\n}\n\nh1 {\n  color: navy;\n}"
     }
   ]);
+  
   const { toast } = useToast();
   const [terminal, setTerminal] = useState<string[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -63,12 +70,14 @@ const Room = () => {
   const [visiblePanels, setVisiblePanels] = useState<VisiblePanels>({
     editor: true,
     terminal: true,
-    videos: true,
-    collaboration: true
+    git: false
   });
-  const [showFileExplorer, setShowFileExplorer] = useState(true);
+  
+  const [showFileExplorer, setShowFileExplorer] = useState(!isMobile);
   const [folders, setFolders] = useState<string[]>([]);
   const [accessRequests, setAccessRequests] = useState<{userId: string, userName: string}[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [showAccessDialog, setShowAccessDialog] = useState(false);
   const [currentRequest, setCurrentRequest] = useState<{userId: string, userName: string} | null>(null);
   const [sessionName, setSessionName] = useState<string>("Collaborative Session");
@@ -76,6 +85,11 @@ const Room = () => {
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [isAutoJoining, setIsAutoJoining] = useState(false);
 
+  // Track cursor positions of participants
+  const [cursorPositions, setCursorPositions] = useState<{
+    [userId: string]: { line: number; column: number; fileName: string }
+  }>({});
+  
   useEffect(() => {
     if (!roomId) {
       const newRoomId = generateRoomId();
@@ -186,6 +200,87 @@ const Room = () => {
           setSessionName(data.name);
         }
       });
+
+      // Handle cursor position updates
+      socketService.on("cursor-position", (data) => {
+        if (data.userId && data.userId !== user.id) {
+          setCursorPositions(prev => ({
+            ...prev,
+            [data.userId]: {
+              line: data.line,
+              column: data.column,
+              fileName: data.fileName
+            }
+          }));
+          
+          // Update participant info with cursor position
+          setParticipants(prev => 
+            prev.map(p => 
+              p.id === data.userId 
+                ? { ...p, cursorPosition: { line: data.line, column: data.column, fileName: data.fileName } }
+                : p
+            )
+          );
+        }
+      });
+      
+      // Handle chat messages
+      socketService.on("chat-message", (data) => {
+        if (data.userId && data.text) {
+          const participant = participants.find(p => p.id === data.userId);
+          
+          setChatMessages(prev => [
+            ...prev, 
+            { 
+              id: `${Date.now()}-${data.userId}`,
+              userId: data.userId,
+              userName: data.userName || participant?.name || data.userId,
+              userColor: participant?.color,
+              text: data.text,
+              timestamp: new Date()
+            }
+          ]);
+        }
+      });
+
+      // Handle user joined/left events
+      socketService.on("user-joined", (data) => {
+        setParticipants(prev => {
+          if (prev.some(p => p.id === data.userId)) {
+            return prev;
+          }
+          return [...prev, {
+            id: data.userId,
+            name: data.userName || `User-${data.userId.slice(0, 4)}`,
+            avatar: data.userAvatar || "",
+            color: getRandomColor(),
+            status: "active"
+          }];
+        });
+        
+        toast({
+          title: "User Joined",
+          description: `${data.userName || data.userId} joined the room`,
+        });
+      });
+      
+      socketService.on("user-left", (data) => {
+        setParticipants(prev => 
+          prev.filter(p => p.id !== data.userId)
+        );
+        
+        // Also remove their cursor position
+        setCursorPositions(prev => {
+          const newPositions = { ...prev };
+          delete newPositions[data.userId];
+          return newPositions;
+        });
+        
+        toast({
+          title: "User Left",
+          description: `${data.userName || data.userId} left the room`,
+        });
+      });
       
       const saveInterval = setInterval(() => {
         if (autoSave && roomId && files.length > 0) {
@@ -203,7 +298,7 @@ const Room = () => {
     return () => {
       socketService.disconnect();
     };
-  }, [roomId, addRoom, user, files, currentFile.name, isRoomOwner, updateRoomFiles, autoSave]);
+  }, [roomId, addRoom, user, files, currentFile.name, isRoomOwner, updateRoomFiles, autoSave, participants]);
 
   const handleCodeChange = (newCode: string) => {
     setCurrentFile({
@@ -238,6 +333,20 @@ const Room = () => {
           }
         }
       }
+    }
+  };
+  
+  // Track cursor position in editor
+  const handleCursorPositionChange = (line: number, column: number) => {
+    if (roomId && user) {
+      socketService.emit("cursor-position", { 
+        roomId, 
+        userId: user.id, 
+        userName: user.name || user.email || user.id,
+        line, 
+        column,
+        fileName: currentFile.name
+      });
     }
   };
 
@@ -418,6 +527,45 @@ const Room = () => {
       });
     }
   };
+  
+  const handleSendChatMessage = (message: string) => {
+    if (roomId && user && message.trim()) {
+      // Find user's color from participants list
+      const currentUser = participants.find(p => p.id === user.id) || {
+        id: user.id,
+        name: user.name || user.email || user.id,
+        color: getRandomColor(),
+        status: 'active'
+      };
+      
+      const newMessage: ChatMessage = {
+        id: `${Date.now()}-${user.id}`,
+        userId: user.id,
+        userName: currentUser.name,
+        userColor: currentUser.color,
+        text: message,
+        timestamp: new Date()
+      };
+      
+      // Add message to local state
+      setChatMessages(prev => [...prev, newMessage]);
+      
+      // Send message to others
+      socketService.emit("chat-message", {
+        roomId,
+        userId: user.id,
+        userName: currentUser.name,
+        text: message,
+        timestamp: new Date()
+      });
+    }
+  };
+  
+  // Get random color for participants
+  const getRandomColor = () => {
+    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
 
   if (roomId && user && !isRoomOwner(roomId) && !isParticipant(roomId)) {
     if (isPendingApproval(roomId)) {
@@ -433,7 +581,7 @@ const Room = () => {
 
   return (
     <MainLayout>
-      <div className="container h-[calc(100vh-5rem)] py-4">
+      <div className="h-[calc(100vh-5rem)] w-screen max-w-full">
         <RoomHeader 
           roomId={roomId} 
           handleRunCode={handleRunCode}
@@ -448,14 +596,18 @@ const Room = () => {
           autoSave={autoSave}
           onToggleAutoSave={toggleAutoSave}
           lastSavedTime={lastSavedTime}
+          participants={participants}
+          onToggleChat={toggleChat}
         />
 
-        <PanelToggleBar 
-          visiblePanels={visiblePanels}
-          togglePanelVisibility={togglePanelVisibility}
-        />
+        <div className="px-2 md:px-4">
+          <PanelToggleBar 
+            visiblePanels={visiblePanels}
+            togglePanelVisibility={togglePanelVisibility}
+          />
+        </div>
 
-        <div className="h-[calc(100vh-16rem)]">
+        <div className="h-[calc(100vh-10rem)] px-2 md:px-4 pb-4">
           <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
             <EditorPanel
               showFileExplorer={showFileExplorer}
@@ -469,24 +621,56 @@ const Room = () => {
               projectFiles={files}
               onCreateFile={handleCreateFile}
               onCreateFolder={handleCreateFolder}
+              visiblePanels={visiblePanels}
             />
-
-            {(visiblePanels.videos || visiblePanels.collaboration) && (
-              <CollaborationSidebar
-                visiblePanels={visiblePanels}
-                isChatOpen={isChatOpen}
-                toggleChat={toggleChat}
-                roomId={roomId || ""}
-                isRoomOwner={roomId ? isRoomOwner(roomId) : false}
-                currentFile={currentFile}
-                files={files}
-                accessRequests={accessRequests}
-                onApproveAccess={handleApproveAccess}
-                onDenyAccess={handleDenyAccess}
-              />
-            )}
           </ResizablePanelGroup>
         </div>
+        
+        {/* Chat floating button for mobile */}
+        {isMobile && (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="default" 
+                size="icon" 
+                className="fixed bottom-5 right-5 rounded-full shadow-lg h-12 w-12"
+              >
+                <MessageSquare className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:w-[400px] p-0">
+              <SheetHeader className="p-4 border-b">
+                <SheetTitle>Chat</SheetTitle>
+              </SheetHeader>
+              <div className="h-[calc(100vh-6rem)]">
+                <Chat 
+                  roomId={roomId || ""} 
+                  messages={chatMessages} 
+                  onSendMessage={handleSendChatMessage}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+        
+        {/* Desktop chat panel */}
+        {!isMobile && isChatOpen && (
+          <div className="fixed right-4 bottom-4 w-80 h-[500px] bg-background border shadow-lg rounded-lg overflow-hidden z-20 flex flex-col">
+            <div className="p-3 border-b bg-muted/40 flex items-center justify-between">
+              <h3 className="font-medium">Chat</h3>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={toggleChat}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <Chat 
+                roomId={roomId || ""} 
+                messages={chatMessages}
+                onSendMessage={handleSendChatMessage}
+              />
+            </div>
+          </div>
+        )}
       </div>
       
       <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>

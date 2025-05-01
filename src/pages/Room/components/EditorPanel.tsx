@@ -2,11 +2,13 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Terminal, Play, FilePlus, Download } from "lucide-react";
+import { Terminal, Play, Download, GitBranch, GitCommit } from "lucide-react";
 import CodeEditor from "@/components/CodeEditor";
 import FileExplorer from "@/components/FileExplorer";
 import { CodeFile } from "../types";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface EditorPanelProps {
   showFileExplorer: boolean;
@@ -20,6 +22,11 @@ interface EditorPanelProps {
   projectFiles: CodeFile[];
   onCreateFile?: (fileName: string, language: string, content?: string) => void;
   onCreateFolder?: (folderName: string) => void;
+  visiblePanels: {
+    editor: boolean;
+    terminal: boolean;
+    git: boolean;
+  };
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -33,11 +40,13 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   handleRunCode,
   projectFiles,
   onCreateFile,
-  onCreateFolder
+  onCreateFolder,
+  visiblePanels
 }) => {
   const [terminalInput, setTerminalInput] = useState<string>("");
   const [terminalHistory, setTerminalHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const [commitMessage, setCommitMessage] = useState<string>("");
 
   const handleTerminalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,11 +104,18 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleCommit = () => {
+    if (commitMessage.trim()) {
+      alert(`Simulated commit: "${commitMessage}"`);
+      setCommitMessage("");
+    }
+  };
+
   return (
     <>
       {showFileExplorer && (
         <>
-          <ResizablePanel defaultSize={15} minSize={10} maxSize={30}>
+          <ResizablePanel defaultSize={15} minSize={10} maxSize={30} className="max-h-full overflow-auto">
             <FileExplorer 
               files={projectFiles} 
               onFileSelect={handleFileClick} 
@@ -112,7 +128,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       )}
       
       <ResizablePanel 
-        defaultSize={showFileExplorer ? 55 : 70} 
+        defaultSize={showFileExplorer ? 85 : 100} 
         minSize={30}
         className="flex flex-col"
       >
@@ -126,12 +142,12 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             }}
           >
             <div className="flex justify-between items-center">
-              <TabsList className="bg-transparent h-9 justify-start">
+              <TabsList className="bg-transparent h-9 justify-start overflow-x-auto">
                 {files.map((file) => (
                   <TabsTrigger 
                     key={file.name} 
                     value={file.name}
-                    className="data-[state=active]:bg-background px-3 py-1.5 h-8"
+                    className="data-[state=active]:bg-background px-3 py-1.5 h-8 whitespace-nowrap"
                   >
                     {file.name}
                   </TabsTrigger>
@@ -150,7 +166,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
           </Tabs>
         </div>
         
-        <ResizablePanelGroup direction="vertical">
+        <ResizablePanelGroup direction="vertical" className="h-full">
           <ResizablePanel defaultSize={70} minSize={30}>
             <div className="h-full">
               <CodeEditor 
@@ -161,53 +177,140 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             </div>
           </ResizablePanel>
           
-          <ResizablePanel defaultSize={30} minSize={15}>
-            <div className="h-full bg-zinc-900">
-              <div className="flex items-center p-2 bg-zinc-800 border-b border-zinc-700">
-                <h3 className="text-sm font-medium text-zinc-300 flex items-center">
-                  <Terminal className="h-4 w-4 mr-2 text-zinc-400" />
-                  Terminal
-                </h3>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="ml-auto text-zinc-300 hover:bg-zinc-700"
-                  onClick={handleRunCode}
-                >
-                  <Play className="h-4 w-4 mr-1" />
-                  Run
-                </Button>
-              </div>
-              <div className="terminal-container p-2 text-zinc-300 font-mono text-sm h-[calc(100%-85px)] overflow-auto custom-scrollbar">
-                {terminal.length === 0 ? (
-                  <div className="text-zinc-500 italic p-2">
-                    Terminal ready. Type commands below or click 'Run' to execute code.
+          {(visiblePanels.terminal || visiblePanels.git) && (
+            <>
+              <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
+              
+              <ResizablePanel defaultSize={30} minSize={15}>
+                <Tabs defaultValue={visiblePanels.terminal ? "terminal" : "git"} className="h-full flex flex-col">
+                  <TabsList className="justify-start px-2 pt-2 bg-zinc-800 border-b border-zinc-700">
+                    {visiblePanels.terminal && (
+                      <TabsTrigger value="terminal" className="text-zinc-300 data-[state=active]:text-white">
+                        <Terminal className="h-4 w-4 mr-2" />
+                        Terminal
+                      </TabsTrigger>
+                    )}
+                    {visiblePanels.git && (
+                      <TabsTrigger value="git" className="text-zinc-300 data-[state=active]:text-white">
+                        <GitBranch className="h-4 w-4 mr-2" />
+                        Git
+                      </TabsTrigger>
+                    )}
+                    {visiblePanels.terminal && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="ml-auto text-zinc-300 hover:bg-zinc-700"
+                        onClick={handleRunCode}
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        Run
+                      </Button>
+                    )}
+                  </TabsList>
+                  
+                  <div className="flex-1 overflow-hidden">
+                    {visiblePanels.terminal && (
+                      <TabsContent value="terminal" className="h-full flex flex-col m-0 data-[state=active]:flex-1">
+                        <div className="terminal-container p-2 text-zinc-300 font-mono text-sm flex-1 overflow-auto custom-scrollbar bg-zinc-900">
+                          {terminal.length === 0 ? (
+                            <div className="text-zinc-500 italic p-2">
+                              Terminal ready. Type commands below or click 'Run' to execute code.
+                            </div>
+                          ) : (
+                            terminal.map((line, i) => (
+                              <div key={i} className="mb-1 whitespace-pre-wrap">
+                                {line}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <form onSubmit={handleTerminalSubmit} className="border-t border-zinc-700 p-2 bg-zinc-900">
+                          <div className="flex items-center bg-zinc-800 rounded">
+                            <span className="text-zinc-500 pl-2">$</span>
+                            <input
+                              type="text"
+                              value={terminalInput}
+                              onChange={(e) => setTerminalInput(e.target.value)}
+                              onKeyDown={handleKeyDown}
+                              className="bg-transparent border-none w-full p-2 text-zinc-300 text-sm focus:outline-none font-mono"
+                              placeholder="Enter command..."
+                              autoComplete="off"
+                              spellCheck="false"
+                            />
+                          </div>
+                        </form>
+                      </TabsContent>
+                    )}
+                    
+                    {visiblePanels.git && (
+                      <TabsContent value="git" className="h-full m-0 p-4 overflow-auto bg-zinc-900 data-[state=active]:flex-1">
+                        <div className="space-y-4">
+                          <div className="rounded-md border border-zinc-700 p-3">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-sm font-medium text-zinc-300">Current Branch</p>
+                              <span className="text-zinc-400 text-xs bg-zinc-800 px-2 py-1 rounded">main</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" className="text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border-zinc-700">
+                                <GitBranch className="h-3.5 w-3.5 mr-2" />
+                                Switch Branch
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="rounded-md border border-zinc-700 p-3">
+                            <p className="text-sm font-medium text-zinc-300 mb-2">Modified Files</p>
+                            <div className="space-y-2 mb-3">
+                              {files.slice(0, 3).map((file, index) => (
+                                <div key={index} className="flex items-center gap-2 text-xs p-1.5 bg-zinc-800 rounded-md text-zinc-300">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  <span>{file.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="commit-message" className="text-zinc-300 text-sm">Commit Message</Label>
+                              <Input 
+                                id="commit-message"
+                                value={commitMessage}
+                                onChange={(e) => setCommitMessage(e.target.value)}
+                                placeholder="Enter commit message..."
+                                className="bg-zinc-800 border-zinc-700 text-zinc-300"
+                              />
+                              <Button 
+                                className="w-full" 
+                                variant="default"
+                                size="sm" 
+                                onClick={handleCommit}
+                                disabled={!commitMessage.trim()}
+                              >
+                                <GitCommit className="h-3.5 w-3.5 mr-2" />
+                                Commit Changes
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="rounded-md border border-zinc-700 p-3">
+                            <p className="text-sm font-medium text-zinc-300 mb-2">Recent Commits</p>
+                            <div className="space-y-2">
+                              <div className="text-xs p-2 bg-zinc-800 rounded-md text-zinc-300">
+                                <div className="flex items-center justify-between">
+                                  <span>Initial commit</span>
+                                  <span className="text-zinc-500">2 hours ago</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+                    )}
                   </div>
-                ) : (
-                  terminal.map((line, i) => (
-                    <div key={i} className="mb-1 whitespace-pre-wrap">
-                      {line}
-                    </div>
-                  ))
-                )}
-              </div>
-              <form onSubmit={handleTerminalSubmit} className="border-t border-zinc-700 p-2">
-                <div className="flex items-center bg-zinc-800 rounded">
-                  <span className="text-zinc-500 pl-2">$</span>
-                  <input
-                    type="text"
-                    value={terminalInput}
-                    onChange={(e) => setTerminalInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="bg-transparent border-none w-full p-2 text-zinc-300 text-sm focus:outline-none font-mono"
-                    placeholder="Enter command..."
-                    autoComplete="off"
-                    spellCheck="false"
-                  />
-                </div>
-              </form>
-            </div>
-          </ResizablePanel>
+                </Tabs>
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </ResizablePanel>
     </>
