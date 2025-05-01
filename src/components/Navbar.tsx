@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Image } from "lucide-react";
+import { Download, Github, Image } from "lucide-react";
 
 const Navbar = () => {
   const { user, logout } = useAuth();

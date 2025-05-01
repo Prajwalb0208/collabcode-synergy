@@ -9,9 +9,9 @@ import {
   MicOff, 
   PhoneOff, 
   ScreenShare, 
-  MessageCircle, 
   Copy, 
-  Share2 
+  Share2,
+  Github
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { socketService } from "@/services/socketService";
@@ -19,8 +19,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 
 interface VideoCallProps {
-  onChatToggle?: () => void;
-  isChatOpen?: boolean;
   roomId?: string;
 }
 
@@ -34,7 +32,7 @@ interface RemoteUser {
   screenSharing?: boolean;
 }
 
-const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId }) => {
+const VideoCall: React.FC<VideoCallProps> = ({ roomId }) => {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -660,14 +658,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ onChatToggle, isChatOpen, roomId 
             className={`rounded-full h-12 w-12 ${isScreenSharing ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
           >
             <ScreenShare className="h-5 w-5" />
-          </Button>
-          <Button 
-            variant={isChatOpen ? "default" : "outline"}
-            size="icon" 
-            onClick={onChatToggle}
-            className="rounded-full h-12 w-12"
-          >
-            <MessageCircle className="h-5 w-5" />
           </Button>
           <Button 
             variant="destructive" 

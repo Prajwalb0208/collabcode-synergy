@@ -143,22 +143,6 @@ class SocketService {
     });
   }
 
-  // Send chat message
-  sendChatMessage(text: string, userName?: string) {
-    if (!this.roomId || !this.userId) {
-      console.warn("Room ID or User ID not set, unable to send chat message");
-      return;
-    }
-    
-    this.emit("chat-message", {
-      roomId: this.roomId,
-      userId: this.userId,
-      userName,
-      text,
-      timestamp: new Date()
-    });
-  }
-
   // Start screen sharing
   startScreenShare() {
     if (!this.roomId || !this.userId) {

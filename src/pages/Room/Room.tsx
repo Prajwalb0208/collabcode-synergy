@@ -20,8 +20,8 @@ const Room = () => {
   const { 
     roomId, user, isRoomOwner, isParticipant, isPendingApproval, 
     isAutoJoining, visiblePanels, files, activeTab, currentFile, 
-    terminal, showFileExplorer, isChatOpen, participants,
-    chatMessages, sessionName, autoSave, lastSavedTime,
+    terminal, showFileExplorer, participants,
+    sessionName, autoSave, lastSavedTime,
     accessRequests, showAccessDialog, currentRequest, liveCursorPositions
   } = state;
   
@@ -53,14 +53,6 @@ const Room = () => {
   const handleEndSession = useCallback(() => {
     navigate('/rooms');
   }, [navigate]);
-  
-  // Handle sending chat messages
-  const handleSendChatMessage = useCallback((message: string) => {
-    const newMessage = actions.handleSendChatMessage(message);
-    if (newMessage) {
-      state.setChatMessages(prev => [...prev, newMessage]);
-    }
-  }, [actions]);
   
   // Check access conditions and render appropriate view
   if (roomId && user && !isRoomOwner(roomId) && !isParticipant(roomId)) {
@@ -104,16 +96,12 @@ const Room = () => {
         toggleAutoSave={actions.toggleAutoSave}
         lastSavedTime={lastSavedTime}
         participants={participants}
-        isChatOpen={isChatOpen}
-        toggleChat={actions.toggleChat}
         handleEndSession={handleEndSession}
         accessRequests={accessRequests}
         handleApproveAccess={actions.handleApproveAccess}
         handleDenyAccess={actions.handleDenyAccess}
         editorContainerRef={editorContainerRef}
         liveCursorPositions={liveCursorPositions}
-        chatMessages={chatMessages}
-        handleSendChatMessage={handleSendChatMessage}
         showAccessDialog={showAccessDialog}
         setShowAccessDialog={state.setShowAccessDialog}
         currentRequest={currentRequest}

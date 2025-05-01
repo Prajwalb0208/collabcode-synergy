@@ -1,12 +1,10 @@
+
 import React from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import PanelToggleBar from "./components/PanelToggleBar";
 import EditorPanel from "./components/EditorPanel";
 import FileExplorer from "@/components/FileExplorer";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, X } from "lucide-react";
-import Chat from "@/components/Chat";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import CollaborationSidebar from "@/components/CollaborationSidebar";
 import LiveCursors from "./components/LiveCursors";
@@ -41,16 +39,12 @@ interface RoomContentProps {
   toggleAutoSave: () => void;
   lastSavedTime: Date | null;
   participants: any[];
-  isChatOpen: boolean;
-  toggleChat: () => void;
   handleEndSession: () => void;
   accessRequests: any[];
   handleApproveAccess: (id: string) => void;
   handleDenyAccess: (id: string) => void;
   editorContainerRef: React.RefObject<HTMLDivElement>;
   liveCursorPositions: Record<string, any>;
-  chatMessages: any[];
-  handleSendChatMessage: (text: string) => void;
   showAccessDialog: boolean;
   setShowAccessDialog: (show: boolean) => void;
   currentRequest: any;
@@ -84,16 +78,12 @@ const RoomContent: React.FC<RoomContentProps> = ({
   toggleAutoSave,
   lastSavedTime,
   participants,
-  isChatOpen,
-  toggleChat,
   handleEndSession,
   accessRequests,
   handleApproveAccess,
   handleDenyAccess,
   editorContainerRef,
   liveCursorPositions,
-  chatMessages,
-  handleSendChatMessage,
   showAccessDialog,
   setShowAccessDialog,
   currentRequest,
@@ -121,7 +111,6 @@ const RoomContent: React.FC<RoomContentProps> = ({
         onToggleAutoSave={toggleAutoSave}
         lastSavedTime={lastSavedTime}
         participants={participants}
-        onToggleChat={toggleChat}
         onEndSession={handleEndSession}
       />
 
@@ -183,8 +172,6 @@ const RoomContent: React.FC<RoomContentProps> = ({
           <ResizablePanel defaultSize={30} minSize={20} className="bg-card/50 backdrop-blur-sm relative">
             <CollaborationSidebar 
               visiblePanels={visiblePanels}
-              isChatOpen={isChatOpen}
-              toggleChat={toggleChat}
               roomId={roomId || ""}
               isRoomOwner={roomId ? isRoomOwner(roomId) : true}
               currentFile={currentFile}
@@ -196,49 +183,6 @@ const RoomContent: React.FC<RoomContentProps> = ({
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-      
-      {/* Chat panels - mobile and desktop */}
-      {isMobile && (
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button 
-              variant="default" 
-              size="icon" 
-              className="fixed bottom-5 right-5 rounded-full shadow-lg h-12 w-12"
-            >
-              <MessageSquare className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:w-[400px] p-0">
-            <SheetHeader className="p-4 border-b">
-              <SheetTitle>Chat</SheetTitle>
-            </SheetHeader>
-            <div className="h-[calc(100vh-6rem)]">
-              <Chat 
-                roomId={roomId || ""} 
-                messages={chatMessages} 
-                onSendMessage={handleSendChatMessage}
-                onClose={toggleChat} // Add close handler
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
-      
-      {!isMobile && (
-        <div 
-          className={`fixed right-0 top-0 w-80 h-full bg-background border-l shadow-lg z-20 flex flex-col transition-transform duration-300 ${
-            isChatOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
-        >
-          <Chat 
-            roomId={roomId || ""} 
-            messages={chatMessages}
-            onSendMessage={handleSendChatMessage}
-            onClose={toggleChat}
-          />
-        </div>
-      )}
       
       {/* Access request dialog */}
       <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
@@ -258,7 +202,6 @@ const RoomContent: React.FC<RoomContentProps> = ({
                 }
               }}
             >
-              <X className="mr-2 h-4 w-4" />
               Deny
             </Button>
             <Button 

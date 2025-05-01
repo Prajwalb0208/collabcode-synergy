@@ -1,140 +1,239 @@
 
-import { useState, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import { useRoomHistory } from "@/contexts/RoomHistoryContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { socketService } from "@/services/socketService";
-import { generateRoomId } from "@/lib/utils";
-import { CodeFile, Participant, ChatMessage, VisiblePanels } from "../types";
+import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRoomHistory } from '@/contexts/RoomHistoryContext';
+import { useToast } from '@/components/ui/use-toast';
+import { nanoid } from 'nanoid';
 
-export function useRoomState() {
-  const { roomId } = useParams<{ roomId: string }>();
-  const navigate = useNavigate();
+// Initial set of files
+const initialFiles = [
+  {
+    name: 'index.html',
+    content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Project</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Hello, World!</h1>
+  <script src="script.js"></script>
+</body>
+</html>`,
+    language: 'html'
+  },
+  {
+    name: 'styles.css',
+    content: `body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+h1 {
+  color: #333;
+}`,
+    language: 'css'
+  },
+  {
+    name: 'script.js',
+    content: `// JavaScript code
+console.log('Hello from script.js');
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM fully loaded');
+});`,
+    language: 'javascript'
+  }
+];
+
+export const useRoomState = () => {
+  const { roomId } = useParams();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const joinParam = searchParams.get('join');
+  const isJoining = joinParam === 'true';
+
+  // Authentication and room context
   const { user } = useAuth();
-  const { toast } = useToast();
   const { 
+    rooms, 
     addRoom, 
-    isRoomOwner, 
-    isParticipant, 
-    isPendingApproval, 
+    getRoom,
+    updateRoomFiles,
     requestAccess,
     approveAccess,
     denyAccess,
-    getRoom,
-    updateRoomFiles
+    isRoomOwner,
+    isParticipant,
+    isPendingApproval
   } = useRoomHistory();
-
-  const [currentFile, setCurrentFile] = useState<CodeFile>({
-    name: "main.js",
-    language: "javascript",
-    content: "// Welcome to CollabCode!\n\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet('World'));"
-  });
+  const { toast } = useToast();
   
-  const [files, setFiles] = useState<CodeFile[]>([
-    {
-      name: "main.js",
-      language: "javascript",
-      content: "// Welcome to CollabCode!\n\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet('World'));"
-    },
-    {
-      name: "index.html",
-      language: "html",
-      content: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Document</title>\n</head>\n<body>\n  <h1>Hello World</h1>\n  <script src=\"main.js\"></script>\n</body>\n</html>"
-    },
-    {
-      name: "styles.css",
-      language: "css",
-      content: "body {\n  font-family: sans-serif;\n  margin: 0;\n  padding: 20px;\n}\n\nh1 {\n  color: navy;\n}"
-    }
-  ]);
-  
+  // Room state
+  const [files, setFiles] = useState(initialFiles);
+  const [folders, setFolders] = useState([]);
+  const [activeTab, setActiveTab] = useState('index.html');
+  const [currentFile, setCurrentFile] = useState(initialFiles[0]);
   const [terminal, setTerminal] = useState<string[]>([]);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("main.js");
-  const [visiblePanels, setVisiblePanels] = useState<VisiblePanels>({
-    editor: true,
+  const [sessionName, setSessionName] = useState(roomId ? `Session-${roomId.substring(0, 5)}` : 'New Session');
+  
+  // UI state
+  const [showFileExplorer, setShowFileExplorer] = useState(true);
+  const [visiblePanels, setVisiblePanels] = useState({
     terminal: true,
-    git: true,
     videos: true,
-    collaboration: false
+    git: false,
+    settings: false
   });
   
-  const [showFileExplorer, setShowFileExplorer] = useState(true);
-  const [folders, setFolders] = useState<string[]>([]);
-  const [accessRequests, setAccessRequests] = useState<{userId: string, userName: string}[]>([]);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [showAccessDialog, setShowAccessDialog] = useState(false);
-  const [currentRequest, setCurrentRequest] = useState<{userId: string, userName: string} | null>(null);
-  const [sessionName, setSessionName] = useState<string>("Collaborative Session");
-  const [autoSave, setAutoSave] = useState<boolean>(true);
+  // Auto save
+  const [autoSave, setAutoSave] = useState(true);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
-  const [isAutoJoining, setIsAutoJoining] = useState(false);
-  const [sessionLoaded, setSessionLoaded] = useState(false);
-  const [liveCursorPositions, setLiveCursorPositions] = useState<Record<string, { x: number; y: number; userName: string }>>({});
+  
+  // Access control
+  const [accessRequests, setAccessRequests] = useState<Array<{userId: string, userName: string}>>([]);
+  const [currentRequest, setCurrentRequest] = useState<{userId: string, userName: string} | null>(null);
+  const [showAccessDialog, setShowAccessDialog] = useState(false);
+  const [isAutoJoining, setIsAutoJoining] = useState(isJoining);
+  
+  // Real-time cursor tracking
+  const [cursorPositions, setCursorPositions] = useState<Record<string, {userId: string, line: number, column: number, fileName: string}>>({});
+  const [liveCursorPositions, setLiveCursorPositions] = useState<Record<string, {x: number, y: number, userName: string}>>({});
+  
+  // User state
+  const [participants, setParticipants] = useState<Array<{id: string, name: string, role: string, avatar?: string}>>([]);
   const [screenSharingUser, setScreenSharingUser] = useState<string | null>(null);
-  const [cursorPositions, setCursorPositions] = useState<{
-    [userId: string]: { line: number; column: number; fileName: string }
-  }>({});
+
+  // Load room data
+  useEffect(() => {
+    if (roomId && user) {
+      const roomData = getRoom(roomId);
+      
+      if (roomData) {
+        setFiles(roomData.files || initialFiles);
+        setFolders(roomData.folders || []);
+        setSessionName(roomData.name || `Session-${roomId.substring(0, 5)}`);
+        
+        // Initialize with the first file as current
+        if (roomData.files && roomData.files.length > 0) {
+          setCurrentFile(roomData.files[0]);
+          setActiveTab(roomData.files[0].name);
+        }
+        
+        // Add room owner as participant
+        setParticipants([{
+          id: roomData.owner,
+          name: roomData.ownerName || 'Owner',
+          role: 'owner',
+          avatar: roomData.ownerAvatar
+        }]);
+        
+        // If the current user is the owner, add them to participants
+        if (isRoomOwner(roomId) && user) {
+          setParticipants(prev => {
+            if (prev.some(p => p.id === user.id)) {
+              return prev;
+            }
+            return [{
+              id: user.id,
+              name: user.name || user.email || 'You',
+              role: 'owner',
+              avatar: user.avatar
+            }];
+          });
+        }
+        // If the current user is a participant, add them too
+        else if (isParticipant(roomId) && user) {
+          setParticipants(prev => {
+            if (prev.some(p => p.id === user.id)) {
+              return prev;
+            }
+            return [...prev, {
+              id: user.id,
+              name: user.name || user.email || 'You',
+              role: 'participant',
+              avatar: user.avatar
+            }];
+          });
+        }
+      } 
+      // Create a new room if none exists
+      else if (!roomId || roomId === 'new') {
+        const newRoomId = nanoid(8);
+        
+        // If user navigated to /new-room, create a new one and redirect
+        if (window.location.pathname === '/new-room' && user) {
+          addRoom({
+            id: newRoomId,
+            name: `Session-${newRoomId.substring(0, 5)}`,
+            owner: user.id,
+            ownerName: user.name || user.email,
+            ownerAvatar: user.avatar,
+            files: initialFiles,
+            folders: [],
+            participants: [],
+            createdAt: new Date(),
+            lastUpdated: new Date()
+          });
+          
+          // Navigate to the new room
+          window.history.replaceState({}, '', `/room/${newRoomId}`);
+        }
+      }
+    }
+  }, [roomId, user, getRoom, addRoom, isRoomOwner, isParticipant]);
 
   return {
     roomId,
-    navigate,
-    location,
     user,
+    files,
+    setFiles,
+    folders,
+    setFolders,
+    activeTab,
+    setActiveTab,
+    currentFile,
+    setCurrentFile,
+    terminal,
+    setTerminal,
+    showFileExplorer,
+    setShowFileExplorer,
+    visiblePanels,
+    setVisiblePanels,
+    autoSave,
+    setAutoSave,
+    lastSavedTime,
+    setLastSavedTime,
+    accessRequests,
+    setAccessRequests,
+    currentRequest,
+    setCurrentRequest,
+    showAccessDialog,
+    setShowAccessDialog,
+    isAutoJoining,
+    setIsAutoJoining,
+    cursorPositions,
+    setCursorPositions,
+    liveCursorPositions,
+    setLiveCursorPositions,
+    participants,
+    setParticipants,
+    screenSharingUser,
+    setScreenSharingUser,
+    sessionName,
+    setSessionName,
     toast,
-    addRoom,
+    updateRoomFiles,
     isRoomOwner,
     isParticipant,
     isPendingApproval,
     requestAccess,
     approveAccess,
-    denyAccess,
-    getRoom,
-    updateRoomFiles,
-    currentFile,
-    setCurrentFile,
-    files,
-    setFiles,
-    terminal,
-    setTerminal,
-    isChatOpen,
-    setIsChatOpen,
-    activeTab,
-    setActiveTab,
-    visiblePanels,
-    setVisiblePanels,
-    showFileExplorer,
-    setShowFileExplorer,
-    folders,
-    setFolders,
-    accessRequests,
-    setAccessRequests,
-    participants,
-    setParticipants,
-    chatMessages,
-    setChatMessages,
-    showAccessDialog,
-    setShowAccessDialog,
-    currentRequest,
-    setCurrentRequest,
-    sessionName,
-    setSessionName,
-    autoSave,
-    setAutoSave,
-    lastSavedTime,
-    setLastSavedTime,
-    isAutoJoining,
-    setIsAutoJoining,
-    sessionLoaded,
-    setSessionLoaded,
-    liveCursorPositions,
-    setLiveCursorPositions,
-    screenSharingUser,
-    setScreenSharingUser,
-    cursorPositions,
-    setCursorPositions
+    denyAccess
   };
-}
+};

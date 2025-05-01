@@ -16,7 +16,6 @@ export function useRoomActions({
   setAccessRequests,
   setCurrentRequest,
   setShowAccessDialog,
-  setIsChatOpen,
   setAutoSave,
   autoSave,
   setTerminal,
@@ -78,10 +77,6 @@ export function useRoomActions({
     }
   }, [roomId, denyAccess, currentRequest, setAccessRequests, setCurrentRequest, setShowAccessDialog]);
 
-  const toggleChat = useCallback(() => {
-    setIsChatOpen(prev => !prev);
-  }, [setIsChatOpen]);
-
   const handleManualSave = useCallback(() => {
     if (roomId) {
       updateRoomFiles(roomId, files);
@@ -125,34 +120,6 @@ export function useRoomActions({
     return name;
   }, [roomId]);
 
-  const handleSendChatMessage = useCallback((message: string) => {
-    if (roomId && user && message.trim()) {
-      // Generate random color if not available
-      const getRandomColor = () => {
-        const colors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
-        return colors[Math.floor(Math.random() * colors.length)];
-      };
-
-      socketService.emit("chat-message", {
-        roomId,
-        userId: user.id,
-        userName: user.name || user.email || user.id,
-        text: message,
-        timestamp: new Date()
-      });
-      
-      return {
-        id: `${Date.now()}-${user.id}`,
-        userId: user.id,
-        userName: user.name || user.email || user.id,
-        userColor: getRandomColor(),
-        text: message,
-        timestamp: new Date()
-      };
-    }
-    return null;
-  }, [roomId, user]);
-
   const handleCursorPositionChange = useCallback((line: number, column: number) => {
     // Only emit cursor position if roomId and userId are available
     if (!roomId || !user) {
@@ -172,12 +139,10 @@ export function useRoomActions({
     handleRequestAccess,
     handleApproveAccess,
     handleDenyAccess,
-    toggleChat,
     handleManualSave,
     toggleAutoSave,
     copySessionCode,
     handleUpdateSessionName,
-    handleSendChatMessage,
     handleCursorPositionChange
   };
 }
