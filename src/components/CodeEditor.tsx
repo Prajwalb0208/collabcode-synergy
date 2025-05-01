@@ -39,7 +39,7 @@ const CodeEditor = ({
     editorRef.current = editor;
     monacoRef.current = monaco;
     
-    // Set up editor options - always ensure readOnly is false
+    // Set up editor options
     editor.updateOptions({
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
@@ -57,7 +57,7 @@ const CodeEditor = ({
         horizontalScrollbarSize: 10,
         alwaysConsumeMouseWheel: false
       },
-      readOnly: false, // Always make editor editable
+      readOnly: readOnly // Use the prop value here
     });
 
     // Focus editor
@@ -109,7 +109,7 @@ const CodeEditor = ({
           fontSize: 14,
           lineHeight: 20,
           fontWeight: '400',
-          readOnly: false // Always force editor to be editable
+          readOnly: readOnly // Use the prop value here
         }}
         className="editor-container"
       />

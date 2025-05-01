@@ -86,7 +86,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               code={ensuredCurrentFile.content}
               onChange={handleCodeChange}
               language={ensuredCurrentFile.language}
-              readOnly={false} // Force editor to be editable
+              readOnly={!editable} // Pass the editable prop correctly
               onCursorPositionChange={onCursorPositionChange}
             />
           </div>

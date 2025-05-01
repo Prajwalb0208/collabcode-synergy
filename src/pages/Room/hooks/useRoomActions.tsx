@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { socketService } from "@/services/socketService";
 
@@ -160,14 +159,12 @@ export function useRoomActions({
       return;
     }
     
-    socketService.emit("cursor-position", { 
-      roomId, 
-      userId: user.id, 
-      userName: user.name || user.email || user.id,
+    socketService.emitCursorPosition(
       line, 
-      column,
-      fileName: currentFile?.name || 'unknown'
-    });
+      column, 
+      currentFile?.name || 'unknown', 
+      user.name || user.email || user.id
+    );
   }, [roomId, user, currentFile]);
 
   return {
