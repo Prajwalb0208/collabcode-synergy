@@ -13,6 +13,7 @@ import Room from "./pages/Room";
 import Rooms from "./pages/Rooms";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import DesignDownload from "./pages/DesignDownload";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +36,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/design" element={<DesignDownload />} />
                 
                 {/* Protected routes - require authentication */}
                 <Route path="/room/:roomId" element={

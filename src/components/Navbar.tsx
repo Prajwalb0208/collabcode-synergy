@@ -1,79 +1,121 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
+
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download, Image } from "lucide-react";
 
 const Navbar = () => {
-  const location = useLocation();
-  
-  // Check if we're on certain pages where the navbar should have a different style
-  const isSpecialPage = ["/new-room", "/room"].some(path => 
-    location.pathname.startsWith(path)
-  );
-  
-  if (isSpecialPage) {
-    return (
-      <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-        <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="font-semibold tracking-tight">CollabCode</span>
-          </Link>
-          
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/rooms">My Rooms</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-    );
-  }
-  
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-      <div className="container flex h-16 items-center">
-        <Link to="/" className="mr-6 flex items-center gap-2">
-          <span className="font-semibold tracking-tight">CollabCode</span>
-        </Link>
-        <nav className="flex flex-1 items-center justify-between">
-          <div className="flex gap-6">
-            <Link 
-              to="/" 
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-foreground/80",
-                location.pathname === "/" ? "text-foreground" : "text-foreground/60"
-              )}
-            >
-              Home
-            </Link>
-            <Link 
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center">
+        <div className="mr-4 hidden md:flex">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <span className="hidden font-bold sm:inline-block">
+              CollabCode Synergy
+            </span>
+          </Link>
+          <nav className="flex items-center space-x-6 text-sm font-medium">
+            <Link
               to="/rooms"
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-foreground/80",
-                location.pathname === "/rooms" ? "text-foreground" : "text-foreground/60"
-              )}
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               My Rooms
             </Link>
-            <Link 
-              to="/docs"
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-foreground/80",
-                location.pathname === "/docs" ? "text-foreground" : "text-foreground/60"
-              )}
+            <Link
+              to="/design"
+              className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
             >
-              Docs
+              <Image className="h-4 w-4" />
+              Design
             </Link>
-          </div>
-          <div className="flex items-center gap-2">
+          </nav>
+        </div>
+
+        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+          <div className="w-full flex-1 md:w-auto md:flex-none"></div>
+          <nav className="flex items-center">
+            <Link
+              to="/design"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 py-2 mr-2 px-0 md:hidden"
+            >
+              <Image className="h-5 w-5" />
+              <span className="sr-only">Design</span>
+            </Link>
             <ThemeToggle />
-            <Button asChild>
-              <Link to="/new-room">New Room</Link>
-            </Button>
-          </div>
-        </nav>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={user.photoURL || ""}
+                        alt={user.displayName || "User"}
+                      />
+                      <AvatarFallback>
+                        {user.displayName?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      {user.displayName && (
+                        <p className="font-medium">{user.displayName}</p>
+                      )}
+                      {user.email && (
+                        <p className="w-[200px] truncate text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/rooms">My Rooms</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/design" className="flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      Design Export
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={() => navigate("/auth")} size="sm">
+                Sign In
+              </Button>
+            )}
+          </nav>
+        </div>
       </div>
     </header>
   );
