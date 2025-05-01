@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -74,7 +73,7 @@ const Room = () => {
     terminal: true,
     git: true,
     videos: true,
-    collaboration: false // Removed collaboration panel by default
+    collaboration: false
   });
   
   const [showFileExplorer, setShowFileExplorer] = useState(!isMobile);
@@ -374,7 +373,127 @@ const Room = () => {
       }
     }
   };
-  
+
+  // CRUD Operations for files
+  // Create file operation
+  const handleCreateFile = (fileName: string, language: string, folderId?: string, content: string = "") => {
+    if (files.some(file => file.name === fileName)) {
+      toast({
+        title: "Error",
+        description: `File ${fileName} already exists`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    let fileContent = content;
+    if (!content) {
+      if (language === 'html') {
+        fileContent = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>New Document</title>\n</head>\n<body>\n  <h1>Hello World</h1>\n</body>\n</html>";
+      } else {
+        fileContent = `// New ${language} file`;
+      }
+    }
+    
+    const newFile: CodeFile = {
+      name: fileName,
+      language,
+      content: fileContent,
+      id: `file-${Date.now()}`
+    };
+    
+    const updatedFiles = [...files, newFile];
+    setFiles(updatedFiles);
+    setCurrentFile(newFile);
+    setActiveTab(fileName);
+    
+    if (roomId) {
+      socketService.emit("file-update", { files: updatedFiles, roomId });
+      
+      updateRoomFiles(roomId, updatedFiles);
+      setLastSavedTime(new Date());
+    }
+    
+    toast({
+      title: "File Created",
+      description: `Created new file: ${fileName}`,
+    });
+  };
+
+  // Delete file operation
+  const handleDeleteFile = (fileName: string) => {
+    // Prevent deleting the last file
+    if (files.length <= 1) {
+      toast({
+        title: "Cannot Delete",
+        description: "You need at least one file in the project",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedFiles = files.filter(file => file.name !== fileName);
+    setFiles(updatedFiles);
+    
+    // If we're deleting the current file, switch to another one
+    if (currentFile.name === fileName) {
+      const newCurrentFile = updatedFiles[0];
+      setCurrentFile(newCurrentFile);
+      setActiveTab(newCurrentFile.name);
+    }
+    
+    if (roomId) {
+      socketService.emit("file-update", { files: updatedFiles, roomId });
+      
+      updateRoomFiles(roomId, updatedFiles);
+      setLastSavedTime(new Date());
+    }
+    
+    toast({
+      title: "File Deleted",
+      description: `Deleted file: ${fileName}`,
+    });
+  };
+
+  // Rename file operation
+  const handleRenameFile = (oldName: string, newName: string) => {
+    // Check if file with the new name already exists
+    if (files.some(file => file.name === newName)) {
+      toast({
+        title: "Error",
+        description: `File ${newName} already exists`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedFiles = files.map(file => 
+      file.name === oldName 
+        ? { ...file, name: newName } 
+        : file
+    );
+    
+    setFiles(updatedFiles);
+    
+    // Update current file if it was renamed
+    if (currentFile.name === oldName) {
+      setCurrentFile({ ...currentFile, name: newName });
+      setActiveTab(newName);
+    }
+    
+    if (roomId) {
+      socketService.emit("file-update", { files: updatedFiles, roomId });
+      
+      updateRoomFiles(roomId, updatedFiles);
+      setLastSavedTime(new Date());
+    }
+    
+    toast({
+      title: "File Renamed",
+      description: `Renamed ${oldName} to ${newName}`,
+    });
+  };
+
   // Track cursor position in editor
   const handleCursorPositionChange = (line: number, column: number) => {
     if (roomId && user) {
@@ -461,7 +580,7 @@ const Room = () => {
   };
 
   const handleEndSession = () => {
-    navigate('/rooms'); // Navigate to sessions page when end class is clicked
+    navigate('/rooms'); // Navigate to rooms page
   };
 
   const togglePanelVisibility = (panel: keyof VisiblePanels) => {
@@ -480,51 +599,7 @@ const Room = () => {
     }
   };
 
-  // Enhanced file creation function that supports folder paths
-  const handleCreateFile = (fileName: string, language: string, folderId?: string, content: string = "") => {
-    if (files.some(file => file.name === fileName)) {
-      toast({
-        title: "Error",
-        description: `File ${fileName} already exists`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    let fileContent = content;
-    if (!content) {
-      if (language === 'html') {
-        fileContent = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>New Document</title>\n</head>\n<body>\n  <h1>Hello World</h1>\n</body>\n</html>";
-      } else {
-        fileContent = `// New ${language} file`;
-      }
-    }
-    
-    const newFile: CodeFile = {
-      name: fileName,
-      language,
-      content: fileContent
-    };
-    
-    const updatedFiles = [...files, newFile];
-    setFiles(updatedFiles);
-    setCurrentFile(newFile);
-    setActiveTab(fileName);
-    
-    if (roomId) {
-      socketService.emit("file-update", { files: updatedFiles, roomId });
-      
-      updateRoomFiles(roomId, updatedFiles);
-      setLastSavedTime(new Date());
-    }
-    
-    toast({
-      title: "File Created",
-      description: `Created new file: ${fileName}`,
-    });
-  };
-  
-  // Enhanced folder creation function that supports parent folders
+  // Enhanced folder creation function
   const handleCreateFolder = (folderName: string, parentId?: string) => {
     if (folders.includes(folderName)) {
       toast({
@@ -548,7 +623,7 @@ const Room = () => {
     });
   };
   
-  // New function to handle moving files between folders
+  // Function to handle moving files between folders
   const handleMoveFile = (fileId: string, targetFolderId: string) => {
     // In a real implementation, this would update the file path
     // For now we'll just show a toast
@@ -668,7 +743,7 @@ const Room = () => {
           lastSavedTime={lastSavedTime}
           participants={participants}
           onToggleChat={toggleChat}
-          onEndSession={handleEndSession} // Add handler for ending session
+          onEndSession={handleEndSession}
         />
 
         <div className="px-2 md:px-4">
@@ -693,8 +768,11 @@ const Room = () => {
                 projectFiles={files}
                 onCreateFile={handleCreateFile}
                 onCreateFolder={handleCreateFolder}
+                onMoveFile={handleMoveFile}
                 visiblePanels={visiblePanels}
-                editable={true} // Enable file editing
+                editable={true} // Ensure files are editable
+                onDeleteFile={handleDeleteFile} // Add delete file capability
+                onRenameFile={handleRenameFile} // Add rename file capability
               />
               <LiveCursors 
                 containerRef={editorContainerRef} 
@@ -722,7 +800,8 @@ const Room = () => {
           </ResizablePanelGroup>
         </div>
         
-        {/* Chat floating button for mobile */}
+        {/* Chat panels - mobile and desktop */}
+        {/* ... keep existing code (chat panel UI) */}
         {isMobile && (
           <Sheet>
             <SheetTrigger asChild>
@@ -749,7 +828,6 @@ const Room = () => {
           </Sheet>
         )}
         
-        {/* Desktop chat panel - sliding from right side */}
         {!isMobile && (
           <div 
             className={`fixed right-0 top-0 w-80 h-full bg-background border-l shadow-lg z-20 flex flex-col transition-transform duration-300 ${
@@ -772,42 +850,42 @@ const Room = () => {
             </div>
           </div>
         )}
+        
+        {/* Access request dialog */}
+        <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Access Request</DialogTitle>
+              <DialogDescription>
+                {currentRequest?.userName} is requesting to join this room.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex items-center justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (currentRequest) {
+                    handleDenyAccess(currentRequest.userId);
+                  }
+                }}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Deny
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (currentRequest) {
+                    handleApproveAccess(currentRequest.userId);
+                  }
+                }}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Approve
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-      
-      {/* Access request dialog */}
-      <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Access Request</DialogTitle>
-            <DialogDescription>
-              {currentRequest?.userName} is requesting to join this room.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex items-center justify-end space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                if (currentRequest) {
-                  handleDenyAccess(currentRequest.userId);
-                }
-              }}
-            >
-              <X className="mr-2 h-4 w-4" />
-              Deny
-            </Button>
-            <Button 
-              onClick={() => {
-                if (currentRequest) {
-                  handleApproveAccess(currentRequest.userId);
-                }
-              }}
-            >
-              <Check className="mr-2 h-4 w-4" />
-              Approve
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </MainLayout>
   );
 };

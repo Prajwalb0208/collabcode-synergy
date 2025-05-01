@@ -43,7 +43,7 @@ interface RoomHeaderProps {
   lastSavedTime?: Date | null;
   participants?: Participant[];
   onToggleChat?: () => void;
-  onEndSession?: () => void; // Add end session handler
+  onEndSession?: () => void; // End session handler
 }
 
 const RoomHeader: React.FC<RoomHeaderProps> = ({ 

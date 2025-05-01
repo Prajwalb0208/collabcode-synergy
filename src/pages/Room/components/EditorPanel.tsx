@@ -1,4 +1,3 @@
-
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -33,6 +32,8 @@ interface EditorPanelProps {
     collaboration: boolean;
   };
   editable?: boolean; // Add prop to control editing capability
+  onDeleteFile?: (fileName: string) => void; // Add delete file capability
+  onRenameFile?: (oldName: string, newName: string) => void; // Add rename file capability
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -49,7 +50,9 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   onCreateFolder,
   onMoveFile,
   visiblePanels,
-  editable = false // Default to false for backward compatibility
+  editable = true, // Set default to true to ensure files are editable
+  onDeleteFile,
+  onRenameFile
 }) => {
   const [terminalInput, setTerminalInput] = useState<string>("");
   const [terminalHistory, setTerminalHistory] = useState<string[]>([]);
@@ -59,6 +62,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   const [githubRepo, setGithubRepo] = useState<string>("");
   const [isPushing, setIsPushing] = useState<boolean>(false);
   const { toast } = useToast();
+  const [isRenamingFile, setIsRenamingFile] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
 
   const handleTerminalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +147,49 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     }
   };
 
+  // Handle file rename
+  const handleRenameFileClick = () => {
+    setIsRenamingFile(true);
+    setNewFileName(currentFile.name);
+  };
+
+  // Submit file rename
+  const submitRenameFile = () => {
+    if (newFileName.trim() === "" || newFileName === currentFile.name) {
+      setIsRenamingFile(false);
+      return;
+    }
+
+    if (onRenameFile) {
+      onRenameFile(currentFile.name, newFileName);
+      setIsRenamingFile(false);
+      toast({
+        title: "File Renamed",
+        description: `Renamed ${currentFile.name} to ${newFileName}`
+      });
+    }
+  };
+
+  // Handle file deletion
+  const handleDeleteFile = () => {
+    if (files.length <= 1) {
+      toast({
+        title: "Cannot Delete",
+        description: "You need to have at least one file in the project",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (onDeleteFile) {
+      onDeleteFile(currentFile.name);
+      toast({
+        title: "File Deleted",
+        description: `Deleted ${currentFile.name}`
+      });
+    }
+  };
+
   return (
     <>
       {showFileExplorer && (
@@ -185,15 +233,60 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   </TabsTrigger>
                 ))}
               </TabsList>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDownloadFile}
-                className="mr-2"
-                title="Download File"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-1 mr-2">
+                {isRenamingFile ? (
+                  <div className="flex items-center">
+                    <Input
+                      value={newFileName}
+                      onChange={(e) => setNewFileName(e.target.value)}
+                      className="h-7 text-sm mr-1 w-32"
+                      autoFocus
+                      onBlur={submitRenameFile}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitRenameFile();
+                        if (e.key === 'Escape') setIsRenamingFile(false);
+                      }}
+                    />
+                    <Button size="sm" variant="ghost" className="h-7 w-7" onClick={() => setIsRenamingFile(false)}>
+                      ✕
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {onRenameFile && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRenameFileClick}
+                        className="h-7"
+                        title="Rename File"
+                      >
+                        Rename
+                      </Button>
+                    )}
+                    {onDeleteFile && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteFile}
+                        className="h-7 text-red-500 hover:text-red-600"
+                        title="Delete File"
+                      >
+                        Delete
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDownloadFile}
+                      className="h-7"
+                      title="Download File"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </Tabs>
         </div>
@@ -205,7 +298,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                 code={currentFile.content}
                 onChange={handleCodeChange}
                 language={currentFile.language}
-                readOnly={!editable} // Make editor editable based on prop
+                readOnly={!editable}
               />
             </div>
           </ResizablePanel>
@@ -243,6 +336,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                   </TabsList>
                   
                   <div className="flex-1 overflow-hidden">
+                    {/* Terminal Tab Content */}
                     {visiblePanels.terminal && (
                       <TabsContent value="terminal" className="h-full flex flex-col m-0 data-[state=active]:flex-1 p-0 border-0">
                         <div className="terminal-container p-2 text-zinc-300 font-mono text-sm flex-1 overflow-auto custom-scrollbar bg-zinc-900 h-full">
@@ -276,6 +370,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                       </TabsContent>
                     )}
                     
+                    {/* Git Tab Content */}
                     {visiblePanels.git && (
                       <TabsContent value="git" className="p-0 data-[state=active]:flex-1 border-0 bg-zinc-900 h-full">
                         <ScrollArea className="h-full">
