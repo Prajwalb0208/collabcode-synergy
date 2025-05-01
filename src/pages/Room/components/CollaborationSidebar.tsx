@@ -12,8 +12,6 @@ import { Input } from "@/components/ui/input";
 
 interface CollaborationSidebarProps {
   visiblePanels: VisiblePanels;
-  isChatOpen: boolean;
-  toggleChat: () => void;
   roomId: string;
   isRoomOwner: boolean;
   currentFile: CodeFile;
@@ -25,8 +23,6 @@ interface CollaborationSidebarProps {
 
 const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
   visiblePanels,
-  isChatOpen,
-  toggleChat,
   roomId,
   isRoomOwner,
   currentFile,
@@ -82,9 +78,7 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
           <div className="flex-1 overflow-hidden">
             {visiblePanels.videos && (
               <VideoCall 
-                roomId={roomId} 
-                onChatToggle={toggleChat} 
-                isChatOpen={isChatOpen} 
+                roomId={roomId}
               />
             )}
           </div>
