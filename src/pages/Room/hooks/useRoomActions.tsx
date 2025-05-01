@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { socketService } from "@/services/socketService";
 
@@ -155,7 +156,6 @@ export function useRoomActions({
   const handleCursorPositionChange = useCallback((line: number, column: number) => {
     // Only emit cursor position if roomId and userId are available
     if (!roomId || !user) {
-      console.log("Room ID or User ID not set, skipping cursor position update");
       return;
     }
     

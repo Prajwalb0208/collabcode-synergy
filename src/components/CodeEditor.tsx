@@ -57,7 +57,7 @@ const CodeEditor = ({
         horizontalScrollbarSize: 10,
         alwaysConsumeMouseWheel: false
       },
-      readOnly: readOnly // Use the prop value here
+      readOnly: readOnly // Use the prop value correctly
     });
 
     // Focus editor
@@ -109,7 +109,7 @@ const CodeEditor = ({
           fontSize: 14,
           lineHeight: 20,
           fontWeight: '400',
-          readOnly: readOnly // Use the prop value here
+          readOnly: readOnly // Use the prop value correctly
         }}
         className="editor-container"
       />

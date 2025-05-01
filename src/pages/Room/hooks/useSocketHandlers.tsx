@@ -97,7 +97,7 @@ export function useSocketHandlers({
       });
       
       socketService.on("session-update", (data) => {
-        if (data.name) {
+        if (data.name && setSessionName) {
           setSessionName(data.name);
         }
       });

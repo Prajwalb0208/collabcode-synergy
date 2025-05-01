@@ -188,9 +188,15 @@ export function useFileOperations({
       description: `Created new folder: ${folderName}`,
     });
     
+    const updatedFolders = [...(folders || []), folderName];
+    
+    if (setFolders) {
+      setFolders(updatedFolders);
+    }
+    
     if (roomId) {
       socketService.emit("folder-update", { 
-        folders: [...folders, folderName], 
+        folders: updatedFolders, 
         roomId 
       });
     }
