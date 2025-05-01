@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Check, X, MessageSquare } from "lucide-react";
 import { generateRoomId } from "@/lib/utils";
 import CollaborationSidebar from "./components/CollaborationSidebar";
+import LiveCursors from "./components/LiveCursors";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -86,7 +87,11 @@ const Room = () => {
   const [autoSave, setAutoSave] = useState<boolean>(true);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [isAutoJoining, setIsAutoJoining] = useState(false);
-
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [liveCursorPositions, setLiveCursorPositions] = useState<Record<string, { x: number; y: number; userName: string }>>({});
+  const [screenSharingUser, setScreenSharingUser] = useState<string | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  
   // Track cursor positions of participants
   const [cursorPositions, setCursorPositions] = useState<{
     [userId: string]: { line: number; column: number; fileName: string }
@@ -117,16 +122,20 @@ const Room = () => {
           setCurrentFile(mainFile);
           setActiveTab(mainFile.name);
           
-          toast({
-            title: "Session Loaded",
-            description: "Your previous work has been restored.",
-          });
+          // Only show toast once when session is loaded
+          if (!sessionLoaded) {
+            toast({
+              title: "Session Loaded",
+              description: "Your previous work has been restored.",
+            });
+            setSessionLoaded(true);
+          }
           
           setLastSavedTime(new Date());
         }
       }
     }
-  }, [roomId, navigate, getRoom, toast, user, location, isRoomOwner, isParticipant, isPendingApproval]);
+  }, [roomId, navigate, getRoom, toast, user, location, isRoomOwner, isParticipant, isPendingApproval, sessionLoaded]);
 
   useEffect(() => {
     if (roomId && user) {
@@ -226,46 +235,40 @@ const Room = () => {
         }
       });
       
-      // Handle chat messages
-      socketService.on("chat-message", (data) => {
-        if (data.userId && data.text) {
-          const participant = participants.find(p => p.id === data.userId);
-          
-          setChatMessages(prev => [
-            ...prev, 
-            { 
-              id: `${Date.now()}-${data.userId}`,
-              userId: data.userId,
-              userName: data.userName || participant?.name || data.userId,
-              userColor: participant?.color,
-              text: data.text,
-              timestamp: new Date()
+      // Handle live cursor movements
+      socketService.on("mouse-position", (data) => {
+        if (data.userId && data.userId !== user.id) {
+          setLiveCursorPositions(prev => ({
+            ...prev,
+            [data.userId]: {
+              x: data.x,
+              y: data.y,
+              userName: data.userName || data.userId
             }
-          ]);
+          }));
         }
       });
-
-      // Handle user joined/left events
-      socketService.on("user-joined", (data) => {
-        setParticipants(prev => {
-          if (prev.some(p => p.id === data.userId)) {
-            return prev;
-          }
-          return [...prev, {
-            id: data.userId,
-            name: data.userName || `User-${data.userId.slice(0, 4)}`,
-            avatar: data.userAvatar || "",
-            color: getRandomColor(),
-            status: "active"
-          }];
-        });
+      
+      // Handle screen sharing
+      socketService.on("screen-share-start", (data) => {
+        setScreenSharingUser(data.userId);
         
-        toast({
-          title: "User Joined",
-          description: `${data.userName || data.userId} joined the room`,
-        });
+        // If someone else is sharing screen, show toast notification
+        if (data.userId !== user.id) {
+          toast({
+            title: "Screen Sharing",
+            description: `${data.userName || 'A participant'} has started sharing their screen`,
+          });
+        }
       });
       
+      socketService.on("screen-share-stop", (data) => {
+        if (screenSharingUser === data.userId) {
+          setScreenSharingUser(null);
+        }
+      });
+      
+      // Remove user's cursor when they leave
       socketService.on("user-left", (data) => {
         setParticipants(prev => 
           prev.filter(p => p.id !== data.userId)
@@ -278,29 +281,62 @@ const Room = () => {
           return newPositions;
         });
         
+        // Remove live cursor
+        setLiveCursorPositions(prev => {
+          const newPositions = { ...prev };
+          delete newPositions[data.userId];
+          return newPositions;
+        });
+        
+        // If screen sharing user leaves, reset screen sharing state
+        if (screenSharingUser === data.userId) {
+          setScreenSharingUser(null);
+        }
+        
         toast({
           title: "User Left",
           description: `${data.userName || data.userId} left the room`,
         });
       });
       
+      // Handle mouse movement for live cursor tracking
+      const handleMouseMove = (e: MouseEvent) => {
+        if (editorContainerRef.current && user) {
+          const { left, top } = editorContainerRef.current.getBoundingClientRect();
+          const x = e.clientX - left;
+          const y = e.clientY - top;
+          
+          socketService.emitMousePosition(x, y, user.name || user.email || user.id);
+        }
+      };
+      
+      // Only track mouse movements inside the editor
+      if (editorContainerRef.current) {
+        editorContainerRef.current.addEventListener('mousemove', handleMouseMove);
+      }
+      
+      // Save interval reduced to prevent excessive saves
       const saveInterval = setInterval(() => {
         if (autoSave && roomId && files.length > 0) {
           updateRoomFiles(roomId, files);
           setLastSavedTime(new Date());
         }
-      }, 30000);
+      }, 60000); // Reduced to once per minute
       
       return () => {
         socketService.disconnect();
         clearInterval(saveInterval);
+        
+        if (editorContainerRef.current) {
+          editorContainerRef.current.removeEventListener('mousemove', handleMouseMove);
+        }
       };
     }
     
     return () => {
       socketService.disconnect();
     };
-  }, [roomId, addRoom, user, files, currentFile.name, isRoomOwner, updateRoomFiles, autoSave, participants]);
+  }, [roomId, addRoom, user, files, currentFile.name, isRoomOwner, updateRoomFiles, autoSave, participants, screenSharingUser]);
 
   const handleCodeChange = (newCode: string) => {
     setCurrentFile({
@@ -638,22 +674,28 @@ const Room = () => {
 
         <div className="h-[calc(100vh-10rem)] px-2 md:px-4 pb-4">
           <ResizablePanelGroup direction="horizontal" className="h-full border rounded-lg overflow-hidden">
-            <EditorPanel
-              showFileExplorer={showFileExplorer}
-              files={files}
-              activeTab={activeTab}
-              handleFileClick={handleFileClick}
-              currentFile={currentFile}
-              handleCodeChange={handleCodeChange}
-              terminal={terminal}
-              handleRunCode={handleRunCode}
-              projectFiles={files}
-              onCreateFile={handleCreateFile}
-              onCreateFolder={handleCreateFolder}
-              visiblePanels={visiblePanels}
-            />
+            <div ref={editorContainerRef} className="relative flex-1">
+              <EditorPanel
+                showFileExplorer={showFileExplorer}
+                files={files}
+                activeTab={activeTab}
+                handleFileClick={handleFileClick}
+                currentFile={currentFile}
+                handleCodeChange={handleCodeChange}
+                terminal={terminal}
+                handleRunCode={handleRunCode}
+                projectFiles={files}
+                onCreateFile={handleCreateFile}
+                onCreateFolder={handleCreateFolder}
+                visiblePanels={visiblePanels}
+              />
+              <LiveCursors 
+                containerRef={editorContainerRef} 
+                cursorPositions={liveCursorPositions}
+              />
+            </div>
             
-            {visiblePanels.collaboration && (
+            {visiblePanels.videos && (
               <CollaborationSidebar 
                 visiblePanels={visiblePanels}
                 isChatOpen={isChatOpen}
@@ -717,6 +759,7 @@ const Room = () => {
         )}
       </div>
       
+      {/* Access request dialog */}
       <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
         <DialogContent>
           <DialogHeader>

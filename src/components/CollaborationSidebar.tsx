@@ -1,6 +1,5 @@
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import CollaborationPanel from "@/components/CollaborationPanel";
 import VideoCall from "@/components/VideoCall";
 import { VisiblePanels, CodeFile } from "@/pages/Room/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,35 +79,13 @@ const CollaborationSidebar: React.FC<CollaborationSidebarProps> = ({
           </div>
           
           <div className="flex-1 overflow-hidden">
-            <ResizablePanelGroup direction="vertical">
-              {visiblePanels.videos && (
-                <>
-                  <ResizablePanel defaultSize={40} minSize={15} className="bg-card border-b border-border/50">
-                    <VideoCall 
-                      roomId={roomId} 
-                      onChatToggle={toggleChat} 
-                      isChatOpen={isChatOpen} 
-                    />
-                  </ResizablePanel>
-                  <ResizableHandle withHandle className="bg-muted/50 hover:bg-muted transition-colors" />
-                </>
-              )}
-              
-              {visiblePanels.collaboration && (
-                <ResizablePanel defaultSize={visiblePanels.videos ? 60 : 100} minSize={20}>
-                  <CollaborationPanel 
-                    isOwner={isRoomOwner} 
-                    roomId={roomId}
-                    files={files}
-                    isChatOpen={isChatOpen}
-                    toggleChat={toggleChat}
-                    accessRequests={accessRequests}
-                    onApproveAccess={onApproveAccess}
-                    onDenyAccess={onDenyAccess}
-                  />
-                </ResizablePanel>
-              )}
-            </ResizablePanelGroup>
+            {visiblePanels.videos && (
+              <VideoCall 
+                roomId={roomId} 
+                onChatToggle={toggleChat} 
+                isChatOpen={isChatOpen} 
+              />
+            )}
           </div>
         </div>
       </ResizablePanel>

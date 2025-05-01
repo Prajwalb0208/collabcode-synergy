@@ -6,6 +6,7 @@ class SocketService {
   private socket: Socket | null = null;
   private roomId: string | null = null;
   private userId: string | null = null;
+  private isScreenSharing: boolean = false;
 
   // Connect to the socket server with room and user info
   connect(roomId: string, userId: string, userName?: string, userAvatar?: string) {
@@ -61,6 +62,7 @@ class SocketService {
       this.socket = null;
       this.roomId = null;
       this.userId = null;
+      this.isScreenSharing = false;
     }
   }
 
@@ -107,6 +109,23 @@ class SocketService {
     });
   }
 
+  // Send mouse position for live cursor
+  emitMousePosition(x: number, y: number, userName?: string) {
+    if (!this.roomId || !this.userId) {
+      console.warn("Room ID or User ID not set, unable to emit mouse position");
+      return;
+    }
+    
+    this.emit("mouse-position", {
+      roomId: this.roomId,
+      userId: this.userId,
+      userName: userName || this.userId,
+      x,
+      y,
+      timestamp: new Date()
+    });
+  }
+
   // Send code changes to other users
   emitCodeChange(code: string, fileName: string, language: string) {
     if (!this.roomId || !this.userId) {
@@ -138,6 +157,41 @@ class SocketService {
       text,
       timestamp: new Date()
     });
+  }
+
+  // Start screen sharing
+  startScreenShare() {
+    if (!this.roomId || !this.userId) {
+      console.warn("Room ID or User ID not set, unable to start screen share");
+      return;
+    }
+    
+    this.isScreenSharing = true;
+    this.emit("screen-share-start", {
+      roomId: this.roomId,
+      userId: this.userId,
+      timestamp: new Date()
+    });
+  }
+  
+  // Stop screen sharing
+  stopScreenShare() {
+    if (!this.roomId || !this.userId) {
+      console.warn("Room ID or User ID not set, unable to stop screen share");
+      return;
+    }
+    
+    this.isScreenSharing = false;
+    this.emit("screen-share-stop", {
+      roomId: this.roomId,
+      userId: this.userId,
+      timestamp: new Date()
+    });
+  }
+  
+  // Check if user is currently screen sharing
+  isUserScreenSharing() {
+    return this.isScreenSharing;
   }
 
   // Request access to a room

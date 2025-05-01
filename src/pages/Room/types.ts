@@ -57,3 +57,10 @@ export interface FileReference {
   fileId: string;
   parentId?: string;
 }
+
+export interface LiveCursor {
+  x: number;
+  y: number;
+  userId: string;
+  userName: string;
+}
