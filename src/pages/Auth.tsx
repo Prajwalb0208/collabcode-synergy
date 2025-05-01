@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { Github, Loader2, LogIn } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 const Auth = () => {
   const { user, isLoading, login, register, loginWithProvider } = useAuth();
@@ -42,6 +43,10 @@ const Auth = () => {
     try {
       const success = await login(email, password);
       if (success) {
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${email.split('@')[0]}!`,
+        });
         navigate("/");
       }
     } catch (error) {
@@ -60,6 +65,10 @@ const Auth = () => {
     try {
       const success = await register(name, email, password);
       if (success) {
+        toast({
+          title: "Registration successful",
+          description: `Welcome, ${name}!`,
+        });
         navigate("/");
       }
     } catch (error) {
@@ -77,6 +86,10 @@ const Auth = () => {
     try {
       const success = await loginWithProvider(provider);
       if (success) {
+        toast({
+          title: "Login successful",
+          description: `Welcome, ${provider} user!`,
+        });
         navigate("/");
       }
     } catch (error) {

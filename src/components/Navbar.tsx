@@ -68,11 +68,11 @@ const Navbar = () => {
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarImage
-                        src={user.photoURL || ""}
-                        alt={user.displayName || "User"}
+                        src={user.avatar || ""}
+                        alt={user.name || "User"}
                       />
                       <AvatarFallback>
-                        {user.displayName?.charAt(0) || "U"}
+                        {user.name?.charAt(0) || "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -80,8 +80,8 @@ const Navbar = () => {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      {user.displayName && (
-                        <p className="font-medium">{user.displayName}</p>
+                      {user.name && (
+                        <p className="font-medium">{user.name}</p>
                       )}
                       {user.email && (
                         <p className="w-[200px] truncate text-sm text-muted-foreground">
