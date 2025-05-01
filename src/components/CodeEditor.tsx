@@ -56,15 +56,13 @@ const CodeEditor = ({
         horizontalScrollbarSize: 10,
         alwaysConsumeMouseWheel: false
       },
-      readOnly: readOnly,
+      readOnly: false, // Ensure the editor is always editable
     });
 
-    // Focus editor if not readOnly
-    if (!readOnly) {
-      setTimeout(() => {
-        editor.focus();
-      }, 100);
-    }
+    // Focus editor
+    setTimeout(() => {
+      editor.focus();
+    }, 100);
   };
 
   const getLanguageForMonaco = (lang: string) => {
@@ -110,7 +108,7 @@ const CodeEditor = ({
           fontSize: 14,
           lineHeight: 20,
           fontWeight: '400',
-          readOnly
+          readOnly: false // Force editor to be editable
         }}
         className="editor-container"
       />

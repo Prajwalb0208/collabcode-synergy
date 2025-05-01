@@ -73,10 +73,10 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
         <ResizablePanel defaultSize={70} minSize={30} className="relative flex-grow">
           <div className="h-full">
             <CodeEditor 
-              code={currentFile.content}
+              code={currentFile.content || ""}
               onChange={handleCodeChange}
-              language={currentFile.language}
-              readOnly={!editable}
+              language={currentFile.language || "javascript"}
+              readOnly={false} // Force editor to be editable
               onCursorPositionChange={onCursorPositionChange}
             />
           </div>
