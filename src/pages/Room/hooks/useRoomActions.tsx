@@ -19,7 +19,8 @@ export function useRoomActions({
   setIsChatOpen,
   setAutoSave,
   autoSave,
-  setTerminal
+  setTerminal,
+  currentRequest
 }) {
   // Setup room actions
   const handleRunCode = useCallback(async () => {
@@ -35,7 +36,7 @@ export function useRoomActions({
       title: "Code Execution",
       description: "Code executed in terminal.",
     });
-  }, [currentFile, setTerminal]);
+  }, [currentFile, setTerminal, toast]);
 
   const handleRequestAccess = useCallback(() => {
     if (roomId && user) {
@@ -47,7 +48,7 @@ export function useRoomActions({
         description: "Waiting for the room owner to approve your request.",
       });
     }
-  }, [roomId, user, requestAccess]);
+  }, [roomId, user, requestAccess, toast]);
 
   const handleApproveAccess = useCallback((userId: string) => {
     if (roomId) {
@@ -61,7 +62,7 @@ export function useRoomActions({
         setShowAccessDialog(false);
       }
     }
-  }, [roomId, approveAccess, currentRequest]);
+  }, [roomId, approveAccess, currentRequest, setAccessRequests, setCurrentRequest, setShowAccessDialog]);
 
   const handleDenyAccess = useCallback((userId: string) => {
     if (roomId) {
@@ -75,11 +76,11 @@ export function useRoomActions({
         setShowAccessDialog(false);
       }
     }
-  }, [roomId, denyAccess, currentRequest]);
+  }, [roomId, denyAccess, currentRequest, setAccessRequests, setCurrentRequest, setShowAccessDialog]);
 
   const toggleChat = useCallback(() => {
     setIsChatOpen(prev => !prev);
-  }, []);
+  }, [setIsChatOpen]);
 
   const handleManualSave = useCallback(() => {
     if (roomId) {
@@ -91,7 +92,7 @@ export function useRoomActions({
         description: "Your work has been saved successfully.",
       });
     }
-  }, [roomId, files, updateRoomFiles]);
+  }, [roomId, files, updateRoomFiles, setLastSavedTime, toast]);
 
   const toggleAutoSave = useCallback(() => {
     setAutoSave(prev => !prev);
@@ -105,7 +106,7 @@ export function useRoomActions({
       updateRoomFiles(roomId, files);
       setLastSavedTime(new Date());
     }
-  }, [autoSave, roomId, files, updateRoomFiles]);
+  }, [autoSave, roomId, files, updateRoomFiles, setLastSavedTime, setAutoSave, toast]);
 
   const copySessionCode = useCallback(() => {
     if (roomId) {
@@ -115,7 +116,7 @@ export function useRoomActions({
         description: "Share this code with others to join your session",
       });
     }
-  }, [roomId]);
+  }, [roomId, toast]);
 
   const handleUpdateSessionName = useCallback((name: string) => {
     if (roomId) {

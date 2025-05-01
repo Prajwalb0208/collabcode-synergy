@@ -14,7 +14,10 @@ export function useFileOperations({
   toast,
   updateRoomFiles,
   setLastSavedTime,
-  autoSave
+  autoSave,
+  lastSavedTime,
+  folders,
+  setFolders
 }) {
   // File operations
   const handleCodeChange = useCallback((newCode: string) => {
@@ -51,7 +54,7 @@ export function useFileOperations({
         }
       }
     }
-  }, [currentFile, files, roomId, autoSave, lastSavedTime]);
+  }, [currentFile, files, roomId, autoSave, lastSavedTime, updateRoomFiles, setLastSavedTime, setCurrentFile, setFiles, toast]);
 
   const handleFileClick = useCallback((file: CodeFile) => {
     setCurrentFile(file);
@@ -104,7 +107,7 @@ export function useFileOperations({
       title: "File Created",
       description: `Created new file: ${fileName}`,
     });
-  }, [files, roomId]);
+  }, [files, roomId, toast, setFiles, setCurrentFile, setActiveTab, updateRoomFiles, setLastSavedTime]);
 
   const handleDeleteFile = useCallback((fileName: string) => {
     // Prevent deleting the last file
@@ -138,7 +141,7 @@ export function useFileOperations({
       title: "File Deleted",
       description: `Deleted file: ${fileName}`,
     });
-  }, [files, currentFile, roomId]);
+  }, [files, currentFile, roomId, setFiles, setCurrentFile, setActiveTab, toast, updateRoomFiles, setLastSavedTime]);
 
   const handleRenameFile = useCallback((oldName: string, newName: string) => {
     // Check if file with the new name already exists
@@ -176,7 +179,7 @@ export function useFileOperations({
       title: "File Renamed",
       description: `Renamed ${oldName} to ${newName}`,
     });
-  }, [files, currentFile, roomId]);
+  }, [files, currentFile, roomId, toast, setFiles, setCurrentFile, setActiveTab, updateRoomFiles, setLastSavedTime]);
 
   const handleCreateFolder = useCallback((folderName: string, parentId?: string) => {
     // Implementation for folder creation
@@ -186,9 +189,12 @@ export function useFileOperations({
     });
     
     if (roomId) {
-      socketService.emit("folder-update", { folders: [...folders, folderName], roomId });
+      socketService.emit("folder-update", { 
+        folders: [...folders, folderName], 
+        roomId 
+      });
     }
-  }, [folders, roomId]);
+  }, [folders, roomId, toast, setFolders]);
 
   const handleMoveFile = useCallback((fileId: string, targetFolderId: string) => {
     // Implementation for moving files
@@ -204,7 +210,7 @@ export function useFileOperations({
         roomId 
       });
     }
-  }, [roomId]);
+  }, [roomId, toast]);
 
   return {
     handleCodeChange,

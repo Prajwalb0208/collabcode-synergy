@@ -24,7 +24,8 @@ export function useSocketHandlers({
   setLiveCursorPositions,
   screenSharingUser,
   setScreenSharingUser,
-  editorContainerRef
+  editorContainerRef,
+  setSessionName
 }) {
   // Socket connection and event handling
   useEffect(() => {
@@ -225,5 +226,5 @@ export function useSocketHandlers({
     return () => {
       socketService.disconnect();
     };
-  }, [roomId, addRoom, user, files, currentFile, isRoomOwner, updateRoomFiles, autoSave, screenSharingUser]);
+  }, [roomId, addRoom, user, files, currentFile, isRoomOwner, updateRoomFiles, autoSave, screenSharingUser, setFiles, setCurrentFile, setLastSavedTime, setFolders, setParticipants, setCursorPositions, setLiveCursorPositions, setAccessRequests, setCurrentRequest, setShowAccessDialog, setScreenSharingUser, setSessionName, toast, editorContainerRef]);
 }
