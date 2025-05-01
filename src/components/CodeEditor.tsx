@@ -25,6 +25,7 @@ const CodeEditor = ({
     // Set up event listener for cursor position
     if (editorRef.current && onCursorPositionChange) {
       const disposable = editorRef.current.onDidChangeCursorPosition(e => {
+        // Make sure roomId and userId are set before emitting cursor position
         onCursorPositionChange(e.position.lineNumber - 1, e.position.column - 1);
       });
       
@@ -38,7 +39,7 @@ const CodeEditor = ({
     editorRef.current = editor;
     monacoRef.current = monaco;
     
-    // Set up editor options
+    // Set up editor options - always ensure readOnly is false
     editor.updateOptions({
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
@@ -108,7 +109,7 @@ const CodeEditor = ({
           fontSize: 14,
           lineHeight: 20,
           fontWeight: '400',
-          readOnly: false // Force editor to be editable
+          readOnly: false // Always force editor to be editable
         }}
         className="editor-container"
       />

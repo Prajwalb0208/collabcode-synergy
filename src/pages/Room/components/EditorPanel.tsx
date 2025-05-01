@@ -54,10 +54,14 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   onRenameFile,
   onCursorPositionChange
 }) => {
-  const ensuredCurrentFile = {
-    name: currentFile?.name || "main.js",
-    language: currentFile?.language || "javascript",
-    content: currentFile?.content || ""
+  const ensuredCurrentFile = currentFile ? {
+    name: currentFile.name || "main.js",
+    language: currentFile.language || "javascript",
+    content: currentFile.content || ""
+  } : {
+    name: "main.js",
+    language: "javascript",
+    content: ""
   };
 
   return (

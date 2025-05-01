@@ -154,16 +154,20 @@ export function useRoomActions({
   }, [roomId, user]);
 
   const handleCursorPositionChange = useCallback((line: number, column: number) => {
-    if (roomId && user) {
-      socketService.emit("cursor-position", { 
-        roomId, 
-        userId: user.id, 
-        userName: user.name || user.email || user.id,
-        line, 
-        column,
-        fileName: currentFile.name
-      });
+    // Only emit cursor position if roomId and userId are available
+    if (!roomId || !user) {
+      console.log("Room ID or User ID not set, skipping cursor position update");
+      return;
     }
+    
+    socketService.emit("cursor-position", { 
+      roomId, 
+      userId: user.id, 
+      userName: user.name || user.email || user.id,
+      line, 
+      column,
+      fileName: currentFile?.name || 'unknown'
+    });
   }, [roomId, user, currentFile]);
 
   return {
