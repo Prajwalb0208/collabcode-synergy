@@ -45,15 +45,15 @@ const Chat: React.FC<ChatProps> = ({ onClose, roomId, messages = [], onSendMessa
   
   return (
     <div className="flex flex-col h-full">
-      {/* Add chat header with close button */}
-      {onClose && (
-        <div className="p-3 border-b flex items-center justify-between bg-muted/20">
-          <h3 className="font-medium">Chat</h3>
+      {/* Chat header with close button */}
+      <div className="p-3 border-b flex items-center justify-between bg-muted/20">
+        <h3 className="font-medium">Chat</h3>
+        {onClose && (
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
         {messages.length === 0 ? (

@@ -16,7 +16,7 @@ const CodeEditor = ({
   onChange, 
   language = "javascript",
   onCursorPositionChange,
-  readOnly = false // Default to false to allow editing
+  readOnly = false
 }: CodeEditorProps) => {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -56,7 +56,7 @@ const CodeEditor = ({
         horizontalScrollbarSize: 10,
         alwaysConsumeMouseWheel: false
       },
-      readOnly: false // Force readOnly to always be false to ensure editing is always enabled
+      readOnly: readOnly
     });
 
     // Focus editor
@@ -108,7 +108,7 @@ const CodeEditor = ({
           fontSize: 14,
           lineHeight: 20,
           fontWeight: '400',
-          readOnly: false // Force readOnly to always be false to ensure editing is always enabled
+          readOnly: readOnly
         }}
         className="editor-container"
       />

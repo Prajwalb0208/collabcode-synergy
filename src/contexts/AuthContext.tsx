@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { auth, getCurrentUser } from "@/services/firebaseService";
+import { onAuthStateChanged } from "firebase/auth";
 import { AuthContextType, User } from "@/types/auth";
 import { formatUser } from "@/utils/userUtils";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
@@ -16,48 +17,35 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Create a default logged-in user
-  const defaultUser: User = {
-    id: "default-user-id",
-    name: "Default User",
-    email: "user@example.com",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
-    provider: "default"
-  };
-
-  const [user, setUser] = useState<User | null>(defaultUser);
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { login, register, loginWithProvider, logout } = useAuthMethods(setUser, setIsLoading);
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Convert Firebase user to our User type
+        const formattedUser = formatUser(firebaseUser);
+        setUser(formattedUser);
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
 
-  // Always return success for auth methods
-  const alwaysSuccessLogin = async () => {
-    console.log("Auto login success");
-    return true;
-  };
-
-  const alwaysSuccessRegister = async () => {
-    console.log("Auto register success");
-    return true;
-  };
-
-  const alwaysSuccessLoginWithProvider = async () => {
-    console.log("Auto provider login success");
-    return true;
-  };
-
-  const alwaysSuccessLogout = () => {
-    console.log("Logout attempted but user remains logged in");
-  };
+    // Clean up subscription
+    return () => unsubscribe();
+  }, []);
 
   return (
     <AuthContext.Provider 
       value={{ 
         user, 
         isLoading, 
-        login: alwaysSuccessLogin, 
-        register: alwaysSuccessRegister, 
-        loginWithProvider: alwaysSuccessLoginWithProvider, 
-        logout: alwaysSuccessLogout 
+        login, 
+        register, 
+        loginWithProvider, 
+        logout 
       }}
     >
       {children}

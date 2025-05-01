@@ -83,18 +83,12 @@ const EditorTabBar: React.FC<EditorTabBarProps> = ({
     }
   };
 
-  const handleTabClick = (fileName: string) => {
-    // Fix: Directly call onTabChange without checking if file exists
-    // This ensures the tab change is always processed
-    onTabChange(fileName);
-  };
-
   return (
     <div className="bg-muted/30 px-1.5 pt-1.5 border-b">
       <Tabs 
         value={activeTab} 
         className="w-full"
-        onValueChange={handleTabClick} // Fix: Use our custom handler that directly passes the value
+        defaultValue={activeTab}
       >
         <div className="flex justify-between items-center">
           <TabsList className="bg-transparent h-9 justify-start overflow-x-auto">
@@ -103,6 +97,7 @@ const EditorTabBar: React.FC<EditorTabBarProps> = ({
                 key={file.name} 
                 value={file.name}
                 className="data-[state=active]:bg-background px-3 py-1.5 h-8 whitespace-nowrap"
+                onClick={() => onTabChange(file.name)}
               >
                 {file.name}
               </TabsTrigger>
